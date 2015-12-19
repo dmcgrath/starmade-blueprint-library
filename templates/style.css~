@@ -1,0 +1,36 @@
+.progress {
+  height: 32px;
+  width:  200px;
+  border: 1px solid black;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+}
+.delete {
+  background: #ad2828;
+  background-image: -webkit-linear-gradient(top, #ad2828, #781717);
+  background-image: -moz-linear-gradient(top, #ad2828, #781717);
+  background-image: -ms-linear-gradient(top, #ad2828, #781717);
+  background-image: -o-linear-gradient(top, #ad2828, #781717);
+  background-image: linear-gradient(to bottom, #ad2828, #781717);
+  -webkit-border-radius: 7;
+  -moz-border-radius: 7;
+  border-radius: 7px;
+  font-family: Arial;
+  color: #ffffff;
+  font-size: 20px;
+  padding: 10px 20px 10px 20px;
+  text-decoration: none;
+}
+
+.delete:hover {
+  background: #380e0e;
+  background-image: -webkit-linear-gradient(top, #380e0e, #210404);
+  background-image: -moz-linear-gradient(top, #380e0e, #210404);
+  background-image: -ms-linear-gradient(top, #380e0e, #210404);
+  background-image: -o-linear-gradient(top, #380e0e, #210404);
+  background-image: linear-gradient(to bottom, #380e0e, #210404);
+  text-decoration: none;
+}
