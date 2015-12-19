@@ -1,3 +1,0 @@
-{% for blueprint in blueprint_list %}
-<a href="http://cloud-1106.appspot.com/view/{{ blueprint.blue_key }}">View Blueprint - {{ blueprint.title }}</a><br>
-{% endfor %}
