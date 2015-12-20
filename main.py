@@ -11,7 +11,7 @@ import zipfile
 
 app = Flask(__name__)
 
-SCHEMA_VERSION_CURRENT = 8
+SCHEMA_VERSION_CURRENT = 9
 CONTEXT_VERSION_CURRENT = 2
 
 class Blueprint(ndb.Model):
@@ -75,16 +75,19 @@ def calc_power_capacity(block_count):
     return 1000 * pow(block_count, 1.05)
 
 def calc_thrust(block_count):
-    return round(pow(block_count * 5.5, 0.87), 0)
+    return pow(block_count * 4.125, 0.87)
+
+def calc_speed_coefficient(block_count, total_block_count):
+    return min(10 * block_count / total_block_count, 2.5) + 0.5
 
 def calc_thrust_power(block_count):
-    return round(block_count / 0.03, 0)
+    return block_count / 0.03
 
 def calc_shield_capacity(block_count):
-    return round(pow(block_count, 0.9791797578) * 110 + 220, 0)
+    return pow(block_count, 0.9791797578) * 110 + 220
 
 def calc_shield_recharge(block_count):
-    return round(block_count * 5.5,1)
+    return block_count * 5.5
 
 def calc_shield_power(block_count, active=False):
     if active:
@@ -127,7 +130,8 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
        "power_usage": {},
        "thrust": "None",
        "shields": {"capacity": 220, "recharge": 0},
-       "systems" : {"medical":0, "factory":0}
+       "systems" : {"medical":0, "factory":0},
+       "speed_coefficient" : 0
     }
 
     ship_dimensions = context['length'] + context['width'] + context['height']
@@ -150,15 +154,15 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
             power_capacity = calc_power_capacity(block_count)
             context['power_capacity']['ideal_capacitor'] = round(power_capacity,0)
         elif block_id == 8: # Thruster Block
-            context['thrust'] = calc_thrust(block_count)
-            context['power_usage']['thruster'] = -calc_thrust_power(block_count)
+            context['thrust'] = round(calc_thrust(block_count),0)
+            context['power_usage']['thruster'] = round(-calc_thrust_power(block_count),0)
         elif block_id == 3: # Shield Capacitor Block
-            context['shields']['capacity'] = calc_shield_capacity(block_count)
+            context['shields']['capacity'] = round(calc_shield_capacity(block_count),0)
         elif block_id == 478: # Shield Recharger Block
             shield_power_standby = calc_shield_power(block_count)
             shield_power_active = calc_shield_power(block_count, True)
             shield_recharge = calc_shield_recharge(block_count)
-            context['shields']['recharge'] = shield_recharge
+            context['shields']['recharge'] = round(shield_recharge,0)
             context['power_recharge']['shields'] = -round(shield_power_standby,0)
             context['power_usage']['shield_recharge'] = -round(shield_power_active,0)
         elif block_id == 15: # Radar Jamming
@@ -259,6 +263,8 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         else:
             thrust_gauge = (math.log(thrust_ratio)/math.log(max_thrust_ratio))*0.5+0.5
 
+        context['speed_coefficient'] = round(calc_speed_coefficient(context['thrust'], total_block_count),1)
+
     shields = context['shields']
     if shields['capacity']<1:
        shield_capacity_gauge = 0
@@ -310,7 +316,7 @@ def download_blueprint(blob_key):
 
 @app.route("/view/<blue_key>")
 def view(blue_key):
-    roman = {0:"N",1:"I",2:"II",3:"III",4:"IV",5:"V",6:"VI",7:"VII",8:"VIII"}
+    roman = {-1:"N",0:"N",1:"I",2:"II",3:"III",4:"IV",5:"V",6:"VI",7:"VII",8:"VIII"}
     blueprint = ndb.Key(urlsafe=blue_key).get()
 
     if blueprint.schema_version < SCHEMA_VERSION_CURRENT or blueprint.context_version < CONTEXT_VERSION_CURRENT:

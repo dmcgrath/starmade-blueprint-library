@@ -78,8 +78,8 @@
 }
 
 body {
-  background: #eaeaea url('/assets/background.jpg') no-repeat scroll center top;
-  background-size: cover;
+  background: #eaeaea url('/assets/background.png') no-repeat scroll center top;
+  background-size: contain;
 }
 
 .tile_shield {
