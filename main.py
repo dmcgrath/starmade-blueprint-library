@@ -254,7 +254,7 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         context['power_usage']['cloaking'] = -total_mass * 14.5
 
     context['element_list'] = element_list
-    context['mass'] = total_mass
+    context['mass'] = round(total_mass,1)
 
     context['systems'] = {key:value for key,value in context['systems'].iteritems() if value > 0}
 
