@@ -4,6 +4,7 @@ from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
 from struct import Struct
 from werkzeug import parse_options_header
+import block_mass
 import json
 import math
 import logging
@@ -13,6 +14,8 @@ app = Flask(__name__)
 
 SCHEMA_VERSION_CURRENT = 9
 CONTEXT_VERSION_CURRENT = 2
+
+block_mass.init()
 
 class Blueprint(ndb.Model):
     blob_key = ndb.StringProperty(indexed=False)
@@ -77,8 +80,8 @@ def calc_power_capacity(block_count):
 def calc_thrust(block_count):
     return pow(block_count * 4.125, 0.87)
 
-def calc_speed_coefficient(block_count, total_block_count):
-    return min(10 * block_count / total_block_count, 2.5) + 0.5
+def calc_speed_coefficient(block_count, total_mass):
+    return min(block_count / total_mass, 2.5) + 0.5
 
 def calc_thrust_power(block_count):
     return block_count / 0.03
@@ -95,14 +98,13 @@ def calc_shield_power(block_count, active=False):
     else:
         return block_count * 5.5
 
-def calc_jump_power(block_count, total_block_count):
-    ideal = math.ceil(total_block_count * 0.05) # Ideal jump modules = 5% of total ship blocks
-    a = 50 - 10 * block_count * total_block_count
-    return (-0.024 * total_block_count)*a*a + 4600*a + 230000 + 1200 * ideal
+def calc_jump_power(block_count, total_mass):
+    ideal = math.ceil(total_mass * 0.5)
+    a = 50 - 100 * block_count * total_mass
+    return (-0.24 * total_mass)*a*a + 4600*a + 230000 + 1200 * ideal
 
 def calc_jump_time(jump_power, block_count):
     return jump_power / (10000 + 50 * block_count)
-
 
 def process_header(blob_key, blob, blueprint_title, blue_key=None):
     version_struct = Struct('>i')
@@ -138,6 +140,7 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     element_count = result[7]
     element_list = []
     total_block_count = 0
+    total_mass = 0
     complex_systems = {"salvage":0, "astrotech":0, "power_drain":0,
                        "power_supply":0, "shield_drain":0, "shield_supply":0}
 
@@ -147,6 +150,7 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         block_id = new_element[0]
         block_count = new_element[1]
         total_block_count += block_count
+        total_mass += block_count * block_mass.NON_STANDARD_MASS.get(block_id, 0.1)
         if block_id == 2: # Power Block
             power_output = calc_power_output(block_count, ship_dimensions)
             context['power_recharge']['ideal_generator'] = round(power_output,0)
@@ -245,16 +249,16 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
                 context['systems']['shield_supply'] = block_count
 
     if 'radar_jamming' in context['systems']:
-        context['power_usage']['radar_jamming'] = -total_block_count * 5
+        context['power_usage']['radar_jamming'] = -total_mass * 50
     if 'cloaking' in context['systems']:
-        context['power_usage']['cloaking'] = -total_block_count * 145
+        context['power_usage']['cloaking'] = -total_mass * 14.5
 
     context['element_list'] = element_list
-    context['mass'] = total_block_count * 0.1
+    context['mass'] = total_mass
 
     context['systems'] = {key:value for key,value in context['systems'].iteritems() if value > 0}
 
-    max_thrust_ratio = calc_thrust(total_block_count) / context['mass']
+    max_thrust_ratio = calc_thrust(total_mass) / context['mass']
     thrust_gauge = 0
     if context['thrust'] != 'None':
         thrust_ratio = context['thrust'] / context['mass']
@@ -263,7 +267,7 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         else:
             thrust_gauge = (math.log(thrust_ratio)/math.log(max_thrust_ratio))*0.5+0.5
 
-        context['speed_coefficient'] = round(calc_speed_coefficient(context['thrust'], total_block_count),1)
+        context['speed_coefficient'] = round(calc_speed_coefficient(context['thrust'], total_mass),1)
 
     shields = context['shields']
     if shields['capacity']<1:
