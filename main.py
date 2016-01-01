@@ -124,9 +124,9 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
        "title": blueprint_title,
        "version": ver,
        "entity": result[0],
-       "length": int(result[6]-result[3]),
-       "width": int(result[4]-result[1]),
-       "height": int(result[5]-result[2]),
+       "length": int(result[6]-result[3])-2, # -2 since core-only blueprint gives 2, -1 respectively.
+       "width": int(result[4]-result[1])-2,
+       "height": int(result[5]-result[2])-2,
        "power_recharge": {"base":1},
        "power_capacity": {"base":50000},
        "power_usage": {},
