@@ -63,22 +63,22 @@ def process_blueprint(blob_key, blueprint_title, blue_key=None):
             return process_header(blob_key, header_blob, blueprint_title, blue_key)
 
 def calc_power_output(block_count, ship_dimensions):
-    block_power = block_count * 25
-    max_dimensions = block_count + 2
+    block_power = block_count * 25.0
+    max_dimensions = block_count + 2.0
     if max_dimensions > ship_dimensions:
-        remainder_dimensions = (block_count % (ship_dimensions-2)) + 2
-        max_mod = (block_count - remainder_dimensions - 2) / (ship_dimensions-2)
-        group_power = pow(ship_dimensions/3,1.7) * max_mod + pow(remainder_dimensions/3,1.7)
-        size_power = (2/(1+pow(1.000696,-0.333*group_power))-1)*1000000                
+        remainder_dimensions = (block_count % (ship_dimensions-2.0)) + 2.0
+        max_mod = (block_count - remainder_dimensions - 2.0) / (ship_dimensions-2.0)
+        group_power = pow(ship_dimensions/3.0,1.7) * max_mod + pow(remainder_dimensions/3.0,1.7)
+        size_power = (2.0/(1.0+pow(1.000696,-0.333*group_power))-1.0)*1000000.0               
     else:
-        size_power = (2/(1+pow(1.000696,-0.333*pow(max_dimensions/3,1.7)))-1)*1000000
+        size_power = (2/(1+pow(1.000696,-0.333*pow(max_dimensions/3.0,1.7)))-1.0)*1000000.0
     return block_power + size_power
 
 def calc_power_capacity(block_count):
-    return 1000 * pow(block_count, 1.05)
+    return 1000.0 * pow(block_count, 1.05)
 
 def calc_thrust(block_count):
-    return pow(block_count * 4.125, 0.87)
+    return pow(block_count * 5.5, 0.87) * 0.75
 
 def calc_speed_coefficient(block_count, total_mass):
     return min(block_count / total_mass, 2.5) + 0.5
@@ -87,7 +87,7 @@ def calc_thrust_power(block_count):
     return block_count / 0.03
 
 def calc_shield_capacity(block_count):
-    return pow(block_count, 0.9791797578) * 110 + 220
+    return pow(block_count, 0.9791797578) * 110.0 + 220.0
 
 def calc_shield_recharge(block_count):
     return block_count * 5.5
@@ -100,11 +100,11 @@ def calc_shield_power(block_count, active=False):
 
 def calc_jump_power(block_count, total_mass):
     ideal = math.ceil(total_mass * 0.5)
-    a = 50 - 100 * block_count * total_mass
-    return (-0.24 * total_mass)*a*a + 4600*a + 230000 + 1200 * ideal
+    a = 50.0 - 100.0 * block_count * total_mass
+    return (-0.24 * total_mass)*a*a + 4600.0*a + 230000.0 + 1200.0 * ideal
 
 def calc_jump_time(jump_power, block_count):
-    return jump_power / (10000 + 50 * block_count)
+    return jump_power / (10000.0 + 50.0 * block_count)
 
 def process_header(blob_key, blob, blueprint_title, blue_key=None):
     version_struct = Struct('>i')
@@ -153,12 +153,12 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         total_mass += block_count * block_mass.NON_STANDARD_MASS.get(block_id, 0.1)
         if block_id == 2: # Power Block
             power_output = calc_power_output(block_count, ship_dimensions)
-            context['power_recharge']['ideal_generator'] = round(power_output,0)
+            context['power_recharge']['ideal_generator'] = round(power_output,1)
         elif block_id == 331: # Power Capacitor
             power_capacity = calc_power_capacity(block_count)
             context['power_capacity']['ideal_capacitor'] = round(power_capacity,0)
         elif block_id == 8: # Thruster Block
-            context['thrust'] = round(calc_thrust(block_count),0)
+            context['thrust'] = round(calc_thrust(block_count),1)
             context['power_usage']['thruster'] = round(-calc_thrust_power(block_count),0)
         elif block_id == 3: # Shield Capacitor Block
             context['shields']['capacity'] = round(calc_shield_capacity(block_count),0)
@@ -276,23 +276,23 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
        max_shields = calc_shield_capacity(total_block_count)
        scgs = math.sin((shields['capacity']/max_shields)*math.pi/2)
        scgl = math.log(shields['capacity'])/math.log(max_shields)
-       shield_capacity_gauge = (scgs+scgl)/2
+       shield_capacity_gauge = (scgs+scgl)/2.0
     if shields['recharge']<1:
        shield_recharge_gauge = 0
     else:
         max_shields_recharge = calc_shield_recharge(total_block_count)
-        srgs = math.sin((shields['recharge']/max_shields_recharge)*math.pi/2)
+        srgs = math.sin((shields['recharge']/max_shields_recharge)*math.pi/2.0)
         srgl = math.log(shields['recharge'])/math.log(max_shields_recharge)
-        shield_recharge_gauge = (srgs+srgl)/2
+        shield_recharge_gauge = (srgs+srgl)/2.0
 
-    context['thrust_gauge'] = round(thrust_gauge * 100,1)
-    context['shield_capacity_gauge'] = round(shield_capacity_gauge * 100,1)
-    context['shield_recharge_gauge'] = round(shield_recharge_gauge * 100,1)
+    context['thrust_gauge'] = round(thrust_gauge * 100.0,1)
+    context['shield_capacity_gauge'] = round(shield_capacity_gauge * 100.0,1)
+    context['shield_recharge_gauge'] = round(shield_recharge_gauge * 100.0,1)
     context['power_recharge_sum'] = sum(context['power_recharge'].itervalues())
     context['power_capacity_sum'] = sum(context['power_capacity'].itervalues())
 
     if context['power_recharge_sum'] > 0:
-        context['idle_time_charge'] = round(context['power_capacity_sum']/context['power_recharge_sum'],1)
+        context['idle_time_charge'] = round(float(context['power_capacity_sum'])/context['power_recharge_sum'],1)
     else:
         context['idle_time_charge'] = "N/A"
 
