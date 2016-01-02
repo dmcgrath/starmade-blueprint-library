@@ -213,25 +213,18 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     context['systems'] = {key:value for key,value in context['systems'].iteritems() if value > 0}
 
     thrust_gauge = 0
+    speed_coefficient = 0.5
     if context['thrust'] != 'None':
-        thrust_gauge = starmade.helper_thrust_rating(context['thrust'], total_mass)
-        context['speed_coefficient'] = round(starmade.calc_speed_coefficient(context['thrust'], total_mass),1)
+        thrust_gauge = starmade.thrust_rating(context['thrust'], total_mass)
+        speed_coefficient = round(starmade.calc_speed_coefficient(context['thrust'], total_mass),1)
 
     shields = context['shields']
-    if shields['capacity']<1:
-       shield_capacity_gauge = 0
-    else:
-       max_shields = starmade.calc_shield_capacity(total_block_count)
-       scgs = math.sin((shields['capacity']/max_shields)*math.pi/2)
-       scgl = math.log(shields['capacity'])/math.log(max_shields)
-       shield_capacity_gauge = (scgs+scgl)/2.0
-    if shields['recharge']<1:
-       shield_recharge_gauge = 0
-    else:
-        max_shields_recharge = starmade.calc_shield_recharge(total_block_count)
-        srgs = math.sin((shields['recharge']/max_shields_recharge)*math.pi/2.0)
-        srgl = math.log(shields['recharge'])/math.log(max_shields_recharge)
-        shield_recharge_gauge = (srgs+srgl)/2.0
+    max_shield_capacity = starmade.calc_shield_capacity(total_block_count)
+    shield_capacity_gauge = starmade.shield_rating(shields['capacity'],
+                                                   max_shield_capacity)
+    max_shield_recharge = starmade.calc_shield_recharge(total_block_count)
+    shield_recharge_gauge = starmade.shield_rating(shields['recharge'],
+                                                   max_shield_recharge)
 
     if context['entity'] == 0:
         context['thrust_gauge'] = round(thrust_gauge * 100.0,1)
