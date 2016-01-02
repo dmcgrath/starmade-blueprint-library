@@ -17,24 +17,31 @@ CONTEXT_VERSION_CURRENT = 2
 
 class Blueprint(ndb.Model):
     blob_key = ndb.StringProperty(indexed=False)
-    schema_version = ndb.IntegerProperty(indexed=True, default=SCHEMA_VERSION_CURRENT)
+    schema_version = ndb.IntegerProperty(indexed=True,
+                                         default=SCHEMA_VERSION_CURRENT)
     context = ndb.JsonProperty(indexed=False)
     elements = ndb.JsonProperty(indexed=False)
     element_count = ndb.IntegerProperty(indexed=True)
     title = ndb.StringProperty(indexed=True)
-    context_version = ndb.IntegerProperty(indexed=True, default=CONTEXT_VERSION_CURRENT)
+    context_version = ndb.IntegerProperty(indexed=True,
+                                          default=CONTEXT_VERSION_CURRENT)
 
-# http://stackoverflow.com/a/3155023/153407
-millnames=['','K','M','B','T']
+
+millnames=['', 'K', 'M', 'B', 'T']
 def millify(n):
+    """Converts a number into it's short scale abbreviation
+
+    From here: http://stackoverflow.com/a/3155023/153407
+    """
     n = float(n)
-    millidx=max(0,min(len(millnames)-1,
-                      int(math.floor(math.log10(abs(n))/3))))
+    millidx = max(0,min(len(millnames)-1,
+                  int(math.floor(math.log10(abs(n))/3))))
     return '%.0f %s'%(n/10**(3*millidx),millnames[millidx])
 
 @app.route("/upload")
 def upload():
-    uploadUri = blobstore.create_upload_url('/submit', gs_bucket_name='blueprints')
+    uploadUri = blobstore.create_upload_url('/submit',
+                                            gs_bucket_name='blueprints')
     return render_template('upload.html', uploadUri=uploadUri)
 
 @app.route("/submit", methods=['POST'])
@@ -48,28 +55,32 @@ def submit():
 
         blue_key = process_blueprint(blob_key, blueprint_title)
 
-        return render_template('finished_upload.html', blue_key=blue_key.urlsafe())
+        return render_template('finished_upload.html',
+                               blue_key=blue_key.urlsafe())
 
 def process_blueprint(blob_key, blueprint_title, blue_key=None):
     blob_info = blobstore.get(blob_key)
     blob = blob_info.open()
 
     with zipfile.ZipFile(file=blob, mode="r") as zip_file:
-        for filename in (name for name in zip_file.namelist() if name.endswith('/header.smbph') and name.count('/') <= 1):
+        for filename in (name for name in zip_file.namelist()
+                         if name.endswith('/header.smbph')
+                            and name.count('/') <= 1):
             blueprint_title = filename[:filename.find("/")].replace("_", " ")
             header_blob = zip_file.open(filename)
-            return process_header(blob_key, header_blob, blueprint_title, blue_key)
+            return process_header(blob_key, header_blob, blueprint_title,
+                                  blue_key)
 
 def process_header(blob_key, blob, blueprint_title, blue_key=None):
     version_struct = Struct('>i')
     ver = version_struct.unpack(blob.read(version_struct.size))[0]
     if ver > 65535:
         endian = '<'
-        ver =  ((ver<<24)&0xFF000000)|((ver<<8)&0xFF0000)|((ver>>8)&0xFF00)|((ver>>24)&0xFF)
+        ver = ver<<24&0xFF000000|ver<<8&0xFF0000|ver>>8&0xFF00|ver>>24&0xFF
     else:
         endian = '>'
-    header_struct = Struct(endian+'I3f3fi') # entityEnum<unsigned int>, minPoint<3xfloat>, maxPoint<3xfloat>, numElements<int>
-    block_struct = Struct(endian+'hi') # BlockID<short>, blockCount<int>
+    header_struct = Struct(endian + 'I3f3fi')
+    block_struct = Struct(endian + 'hi') # BlockID<short>, blockCount<int>
 
     result = []
     result = header_struct.unpack(blob.read(header_struct.size))
@@ -78,16 +89,16 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
        "title": blueprint_title,
        "version": ver,
        "entity": result[0],
-       "length": int(result[6]-result[3])-2, # -2 since core-only blueprint gives 2, -1 respectively.
-       "width": int(result[4]-result[1])-2,
-       "height": int(result[5]-result[2])-2,
-       "power_recharge": {"base":1},
-       "power_capacity": {"base":50000},
+# -2 since core-only blueprint gives 2, -1 respectively.
+       "length": int(result[6] - result[3]) - 2,
+       "width": int(result[4] - result[1]) - 2,
+       "height": int(result[5] - result[2]) - 2,
+       "power_recharge": {"base": 1},
+       "power_capacity": {"base": 50000},
        "power_usage": {},
        "thrust": "None",
        "shields": {"capacity": 220, "recharge": 0},
-       "systems" : {"medical":0, "factory":0},
-       "speed_coefficient" : 0
+       "systems" : {"medical": 0, "factory": 0}
     }
 
     ship_dimensions = context['length'] + context['width'] + context['height']
@@ -95,8 +106,8 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     element_list = []
     total_block_count = 0
     total_mass = 0
-    complex_systems = {"salvage":0, "astrotech":0, "power_drain":0,
-                       "power_supply":0, "shield_drain":0, "shield_supply":0}
+    complex_systems = {"salvage": 0, "astrotech": 0, "power_drain": 0,
+                       "power_supply": 0, "shield_drain": 0, "shield_supply": 0}
 
     for element in xrange(0, element_count):
         new_element = block_struct.unpack(blob.read(block_struct.size))
@@ -106,23 +117,24 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         total_block_count += block_count
         total_mass += block_count * starmade.NON_STANDARD_MASS.get(block_id, 0.1)
         if block_id == 2: # Power Block
-            power_output = starmade.calc_power_output(block_count, ship_dimensions)
-            context['power_recharge']['ideal_generator'] = round(power_output,1)
+            power_output = starmade.calc_power_output(block_count,
+                                                      ship_dimensions)
+            context['power_recharge']['ideal_generator'] = round(power_output, 1)
         elif block_id == 331: # Power Capacitor
             power_capacity = starmade.calc_power_capacity(block_count)
-            context['power_capacity']['ideal_capacitor'] = round(power_capacity,0)
+            context['power_capacity']['ideal_capacitor'] = round(power_capacity, 0)
         elif block_id == 8: # Thruster Block
             context['thrust'] = round(starmade.calc_thrust(block_count),1)
-            context['power_usage']['thruster'] = round(-starmade.calc_thrust_power(block_count),0)
+            context['power_usage']['thruster'] = round(-starmade.calc_thrust_power(block_count), 0)
         elif block_id == 3: # Shield Capacitor Block
-            context['shields']['capacity'] = round(starmade.calc_shield_capacity(block_count),0)
+            context['shields']['capacity'] = round(starmade.calc_shield_capacity(block_count), 0)
         elif block_id == 478: # Shield Recharger Block
             shield_power_standby = starmade.calc_shield_power(block_count)
             shield_power_active = starmade.calc_shield_power(block_count, True)
             shield_recharge = starmade.calc_shield_recharge(block_count)
-            context['shields']['recharge'] = round(shield_recharge,0)
-            context['power_recharge']['shields'] = -round(shield_power_standby,0)
-            context['power_usage']['shield_recharge'] = -round(shield_power_active,0)
+            context['shields']['recharge'] = round(shield_recharge, 0)
+            context['power_recharge']['shields'] = -round(shield_power_standby, 0)
+            context['power_usage']['shield_recharge'] = -round(shield_power_active, 0)
         elif block_id == 15: # Radar Jamming
             context['systems']['radar_jamming'] = block_count
         elif block_id == 22: # Cloaking
@@ -210,13 +222,15 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     context['element_list'] = element_list
     context['mass'] = round(total_mass,1)
 
-    context['systems'] = {key:value for key,value in context['systems'].iteritems() if value > 0}
+    context['systems'] = {key:value for key,value
+                          in context['systems'].iteritems() if value > 0}
 
     thrust_gauge = 0
     speed_coefficient = 0.5
-    if context['thrust'] != 'None':
-        thrust_gauge = starmade.thrust_rating(context['thrust'], total_mass)
-        speed_coefficient = round(starmade.calc_speed_coefficient(context['thrust'], total_mass),1)
+    thrust = context['thrust']
+    if thrust != 'None':
+        thrust_gauge = starmade.thrust_rating(thrust, total_mass)
+        speed_coefficient = round(starmade.calc_speed_coefficient(thrust, total_mass), 1)
 
     shields = context['shields']
     max_shield_capacity = starmade.calc_shield_capacity(total_block_count)
@@ -235,7 +249,8 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     context['power_capacity_sum'] = sum(context['power_capacity'].itervalues())
 
     if context['power_recharge_sum'] > 0:
-        context['idle_time_charge'] = round(float(context['power_capacity_sum'])/context['power_recharge_sum'],1)
+        charge_time = float(context['power_capacity_sum']) / context['power_recharge_sum']
+        context['idle_time_charge'] = round(charge_time, 1)
     else:
         context['idle_time_charge'] = "N/A"
 
@@ -263,21 +278,23 @@ def download_blueprint(blob_key):
 
 @app.route("/view/<blue_key>")
 def view(blue_key):
-    roman = {-1:"N",0:"N",1:"I",2:"II",3:"III",4:"IV",5:"V",6:"VI",7:"VII",8:"VIII"}
+    roman = {-1: "N", 0: "N", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
+             6: "VI", 7: "VII", 8: "VIII"}
     blueprint = ndb.Key(urlsafe=blue_key).get()
 
     if blueprint.schema_version < SCHEMA_VERSION_CURRENT or blueprint.context_version < CONTEXT_VERSION_CURRENT:
-       blueprint = process_blueprint(blueprint.blob_key, blueprint.title, blue_key).get()
+       blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
+                                     blue_key).get()
 
     context = json.loads(blueprint.context)
-    context['class'] = "Class-" + roman.get(round(math.log10(context['mass']),0),"?")
+    context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
     context['blue_key'] = blue_key
     return render_template('view_blueprint.html', **context)
 
 @app.route("/delete/<blue_key>")
 def delete(blue_key):
     blue_key = ndb.Key(urlsafe=blue_key)
-    blobstore.get(blue_key.get().blob_key).delete() # Why didn't project work here?
+    blobstore.get(blue_key.get().blob_key).delete()
     blue_key.delete()
     return redirect(url_for('list'),303)
     
@@ -285,7 +302,7 @@ def delete(blue_key):
 @app.route("/list/")
 def list():
     query = Blueprint.query()
-    blueprint_list = [{"blue_key":result.key.urlsafe(), "title":result.title} for result in query.iter(projection=[Blueprint.title])]
+    blueprint_list = [{"blue_key": result.key.urlsafe(), "title": result.title} for result in query.iter(projection=[Blueprint.title])]
     return render_template("list.html", blueprint_list=blueprint_list)
 
 @app.route("/old/")
