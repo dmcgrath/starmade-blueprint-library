@@ -21,6 +21,7 @@
       <div class="datum">
         <strong>Mass:</strong> {{ mass }}<br>
       </div><br/>
+      {% if entity is equalto 0 %}
       <div class="datum">
         <strong>Thrust:</strong> {{ thrust }}<br>
         <div id="thrust" class="progress">
@@ -30,6 +31,7 @@
       <div class="datum">
         <strong>Max Speed:</strong> {{ speed_coefficient }}x<br>
       </div>
+      {% endif %}
     </div>
     <div class="col middle">
       <div class="subheading">

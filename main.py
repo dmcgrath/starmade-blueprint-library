@@ -12,7 +12,7 @@ import zipfile
 
 app = Flask(__name__)
 
-SCHEMA_VERSION_CURRENT = 9
+SCHEMA_VERSION_CURRENT = 10
 CONTEXT_VERSION_CURRENT = 2
 
 class Blueprint(ndb.Model):
@@ -212,15 +212,9 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
 
     context['systems'] = {key:value for key,value in context['systems'].iteritems() if value > 0}
 
-    max_thrust_ratio = starmade.calc_thrust(total_mass) / context['mass']
     thrust_gauge = 0
     if context['thrust'] != 'None':
-        thrust_ratio = context['thrust'] / context['mass']
-        if thrust_ratio <= 1:
-            thrust_gauge = thrust_ratio * 0.5
-        else:
-            thrust_gauge = (math.log(thrust_ratio)/math.log(max_thrust_ratio))*0.5+0.5
-
+        thrust_gauge = starmade.helper_thrust_rating(context['thrust'], total_mass)
         context['speed_coefficient'] = round(starmade.calc_speed_coefficient(context['thrust'], total_mass),1)
 
     shields = context['shields']
@@ -239,7 +233,9 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         srgl = math.log(shields['recharge'])/math.log(max_shields_recharge)
         shield_recharge_gauge = (srgs+srgl)/2.0
 
-    context['thrust_gauge'] = round(thrust_gauge * 100.0,1)
+    if context['entity'] == 0:
+        context['thrust_gauge'] = round(thrust_gauge * 100.0,1)
+        context['speed_coefficient'] = speed_coefficient
     context['shield_capacity_gauge'] = round(shield_capacity_gauge * 100.0,1)
     context['shield_recharge_gauge'] = round(shield_recharge_gauge * 100.0,1)
     context['power_recharge_sum'] = sum(context['power_recharge'].itervalues())

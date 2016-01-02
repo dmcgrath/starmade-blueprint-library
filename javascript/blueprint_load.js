@@ -15,6 +15,7 @@ function details() {
 
 function redraw(system) {
   var fill = document.getElementById(system+"Fill");
+  if (fill == null) return;
   var gauge = Number(fill.getAttribute("data-gauge"));
   fill.setAttribute("style", "width:"+gauge+"%;background-color:"+color(gauge));
 }
