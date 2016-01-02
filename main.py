@@ -2,6 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
+from starmade import Blueprint
 from struct import Struct
 from werkzeug import parse_options_header
 import json
@@ -11,21 +12,6 @@ import starmade
 import zipfile
 
 app = Flask(__name__)
-
-SCHEMA_VERSION_CURRENT = 10
-CONTEXT_VERSION_CURRENT = 2
-
-class Blueprint(ndb.Model):
-    blob_key = ndb.StringProperty(indexed=False)
-    schema_version = ndb.IntegerProperty(indexed=True,
-                                         default=SCHEMA_VERSION_CURRENT)
-    context = ndb.JsonProperty(indexed=False)
-    elements = ndb.JsonProperty(indexed=False)
-    element_count = ndb.IntegerProperty(indexed=True)
-    title = ndb.StringProperty(indexed=True)
-    context_version = ndb.IntegerProperty(indexed=True,
-                                          default=CONTEXT_VERSION_CURRENT)
-
 
 millnames=['', 'K', 'M', 'B', 'T']
 def millify(n):
@@ -85,14 +71,18 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     result = []
     result = header_struct.unpack(blob.read(header_struct.size))
 
+    # -2 since core-only blueprint gives 2, -1 respectively.
+    length = int(result[6] - result[3]) - 2
+    width = int(result[4] - result[1]) - 2
+    height = int(result[5] - result[2]) - 2
+
     context = {
        "title": blueprint_title,
        "version": ver,
        "entity": result[0],
-# -2 since core-only blueprint gives 2, -1 respectively.
-       "length": int(result[6] - result[3]) - 2,
-       "width": int(result[4] - result[1]) - 2,
-       "height": int(result[5] - result[2]) - 2,
+       "length": length,
+       "width": width,
+       "height": height,
        "power_recharge": {"base": 1},
        "power_capacity": {"base": 50000},
        "power_usage": {},
@@ -258,12 +248,17 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
         blueprint = Blueprint()
     else:
         blueprint = ndb.Key(urlsafe=blue_key).get()
-        blueprint.schema_version = SCHEMA_VERSION_CURRENT
-        blueprint.context_version = CONTEXT_VERSION_CURRENT
+        blueprint.schema_version = starmade.SCHEMA_VERSION_CURRENT
 
     blueprint.blob_key = blob_key
     blueprint.context = json.dumps(context)
     blueprint.elements = json.dumps(element_list)
+    blueprint.element_count = element_count
+    blueprint.length = length
+    blueprint.width = width
+    blueprint.height = height
+    blueprint.max_dimension = max(length, width, height)
+    blueprint.class_rank = int(max(math.log10(total_mass), 0))
     blueprint.title = blueprint_title
     blue_key = blueprint.put()
 
@@ -282,7 +277,7 @@ def view(blue_key):
              6: "VI", 7: "VII", 8: "VIII"}
     blueprint = ndb.Key(urlsafe=blue_key).get()
 
-    if blueprint.schema_version < SCHEMA_VERSION_CURRENT or blueprint.context_version < CONTEXT_VERSION_CURRENT:
+    if blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT:
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
                                      blue_key).get()
 
@@ -307,7 +302,7 @@ def list():
 
 @app.route("/old/")
 def old_list():
-    query = Blueprint.query(Blueprint.schema_version < SCHEMA_VERSION_CURRENT)
+    query = Blueprint.query(Blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT)
     blueprint_list = [{"blue_key":result.urlsafe(), "title":result.urlsafe()} for result in query.iter(keys_only=True)]
     return render_template("list.html", blueprint_list=blueprint_list)
 
