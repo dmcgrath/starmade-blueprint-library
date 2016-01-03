@@ -2,6 +2,8 @@
 
 # For example, thrust and max speed given mass and number of thrusters.
 
+MAX_SIZE_POWER = 2000000
+
 # Returns the maximum possible power recharge rate based upon number of power
 # modules and maximum dimensions of the containing area.
 def calc_power_output(block_count, ship_dimensions):
@@ -31,6 +33,9 @@ def calc_power_output(block_count, ship_dimensions):
     else:
         size_power = 2/(1+pow(1.000696,-0.333*pow(max_dimensions/3.0,1.7)))-1.0
         size_power *= 1000000.0
+
+    if size_power > MAX_SIZE_POWER:
+      size_power = MAX_SIZE_POWER
 
     return block_power + size_power
 

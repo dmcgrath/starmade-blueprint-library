@@ -1,6 +1,6 @@
 .progress {
   height: 32px;
-  width:  200px;
+  width:  300px;
   border: 1px solid black;
 }
 .progressFill {
@@ -168,3 +168,8 @@ li.bp {
   vertical-align: middle;
 }
 
+.gaugetext {
+  float: left;
+  padding-top: 7px;
+  padding-left: 7px;
+}

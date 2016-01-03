@@ -22,37 +22,18 @@
         <strong>Mass:</strong> {{ mass }}<br>
       </div><br/>
       {% if entity is equalto 0 %}
-      <div class="datum">
-        <strong>Thrust:</strong> {{ thrust }}<br>
-        <div id="thrust" class="progress">
-          <span id="thrustFill" class="progressFill" data-gauge="{{ thrust_gauge }}"/>
+        <div class="datum">
+          <strong>Thrust:</strong> {{ thrust }}<br>
         </div>
-      </div>
-      <div class="datum">
-        <strong>Max Speed:</strong> {{ speed_coefficient }}x<br>
-      </div>
+        <div class="datum">
+          <strong>Max Speed:</strong> {{ speed_coefficient }}x<br>
+        </div>
       {% endif %}
-    </div>
-    <div class="col middle">
-      <div class="subheading">
-        <h4>Power</h4>
-      </div>
       <div class="datum">
         <strong>Shield Capacity:</strong> {{ shields.capacity }} C<br>
-        <div id="shieldCapacity" class="progress">
-          <span id="shieldCapacityFill" class="progressFill" data-gauge="{{ shield_capacity_gauge }}"/>
-        </div>
       </div>
       <div class="datum">
         <strong>Shield Recharge:</strong> {{ shields.recharge }} C/sec<br>
-        <div id="shieldRecharge" class="progress">
-          <span id="shieldRechargeFill" class="progressFill" data-gauge="{{ shield_recharge_gauge }}"/>
-        </div>
-      </div>
-    </div>
-    <div class="col right">
-      <div class="subheading">
-        <h4>Shields</h4>
       </div>
       <div class="datum">
         <strong>Power capacity:</strong> {{ power_capacity_sum }} e
@@ -82,9 +63,46 @@
         <strong>Time to charge:</strong> {{ idle_time_charge }} seconds<br>
       </div>
     </div>
-  </div>
-  <div class="data">
-    <div class="col left clear">
+
+    </div>
+    <div class="col middle">
+      <div class="subheading">
+        <h4>Ratings</h4>
+      </div>
+      <div class="datum">
+        <div id="shieldCapacity" class="progress">
+          <div class="gaugetext"><strong>Shield Capacity</strong></div>
+          <span id="shieldCapacityFill" class="progressFill" data-gauge="{{ shield_capacity_gauge }}"/>
+        </div>
+      </div>
+      <div class="datum">
+        <div id="shieldRecharge" class="progress">
+          <div class="gaugetext"><strong>Shield Recharge</strong></div>
+          <span id="shieldRechargeFill" class="progressFill" data-gauge="{{ shield_recharge_gauge }}"/>
+        </div>
+      </div>
+      <div class="datum">
+        <div id="powerCapacity" class="progress">
+          <div class="gaugetext"><strong>Power Capacity</strong></div>
+          <span id="powerCapacityFill" class="progressFill" data-gauge="{{ power_capacity_gauge }}"/>
+        </div>
+      </div>
+      <div class="datum">
+        <div id="shieldRecharge" class="progress">
+          <div class="gaugetext"><strong>Power Recharge</strong></div>
+          <span id="powerRechargeFill" class="progressFill" data-gauge="{{ power_recharge_gauge }}"/>
+        </div>
+      </div>
+      {% if entity is equalto 0 %}
+        <div class="datum">
+          <div id="thrust" class="progress">
+            <div class="gaugetext"><strong>Thrust Ratio</strong></div>
+            <span id="thrustFill" class="progressFill" data-gauge="{{ thrust_gauge }}"/>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    <div class="col right">
       <div class="subheading">
         <h4>Systems</h4>
       </div>
@@ -105,15 +123,24 @@
         {% endfor %}
         </ul>
       </div>
+
+  </div>
+  <div class="data">
+    <div class="col left clear">
+      <div class="subheading">
+        <h4>Spare?</h4>
+      </div>
     </div>
     <div class="col middle">
       <div class="subheading">
         <h4>Element List</h4>
       </div>
       <div class="datum">
+        <ul>
         {% for element in element_list %}
-          <div id="element{{ element[0][0] }}">{{ element[0][1] }}</div>
+          <li id="element{{ element[0][0] }}">{{ element[0][1] }}</li>
         {% endfor %}
+        </ul>
       </div>
       <hr>
     </div>
