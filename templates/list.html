@@ -1,3 +1,25 @@
-{% for blueprint in blueprint_list %}
-<a href="/view/{{ blueprint.blue_key }}">View Blueprint - {{ blueprint.title }}</a><br>
+{% extends "base.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}Blueprint List{% endblock %}
+{% block content %}
+<div id="headline" class="col">
+    <h2>Blueprint List</h2>
+</div>
+<div id="list" class="col">
+{% for rank in range(8) %}
+    <ol seq="{{rank}}">
+      <il>Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][rank]}}</il>
+      <ul class="bp">
+      {% for blueprint in blueprint_list if blueprint.class_rank == rank %}
+      <li class="bp"><h2><a href="/view/{{ blueprint.blue_key }}">{{ blueprint.title }}</a></h2></li>
+      {% endfor %}
+      </ul>
+    </ol>
 {% endfor %}
+</div>
+{% endblock %}
+{% block final %}
+{{ super() }}
+{% endblock %}

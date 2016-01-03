@@ -149,3 +149,18 @@ h4 {
   padding:0.25em;
 }
 
+ul.bp {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+li.bp {
+  background: url("/assets/blueprint_icon.jpg") no-repeat left top;
+  height: 66px;
+  padding-left: 70px;
+  line-height: 66px;
+  display: block;
+  vertical-align: middle;
+}
+

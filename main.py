@@ -297,14 +297,15 @@ def delete(blue_key):
 @app.route("/list/")
 def list():
     query = Blueprint.query()
-    blueprint_list = [{"blue_key": result.key.urlsafe(), "title": result.title} for result in query.iter(projection=[Blueprint.title])]
+    list_query = query.iter(projection=[Blueprint.title, Blueprint.class_rank])
+    blueprint_list = [{"blue_key": r.key.urlsafe(), "title": r.title, "class_rank": r.class_rank} for r in list_query]
     return render_template("list.html", blueprint_list=blueprint_list)
 
 @app.route("/old/")
 def old_list():
     query = Blueprint.query(Blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT)
-    blueprint_list = [{"blue_key":result.urlsafe(), "title":result.urlsafe()} for result in query.iter(keys_only=True)]
-    return render_template("list.html", blueprint_list=blueprint_list)
+    blueprint_list = [{"blue_key":result.urlsafe()} for result in query.iter(keys_only=True)]
+    return render_template("old.html", blueprint_list=blueprint_list)
 
 #@app.route('/')
 #def hello():

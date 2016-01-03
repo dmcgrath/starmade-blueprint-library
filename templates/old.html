@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}Blueprint List{% endblock %}
+{% block content %}
+<div id="headline" class="col">
+    <h2>Blueprint List - Out of date entities</h2>
+</div>
+<div id="list" class="col">
+   <ul>
+   {% for blueprint in blueprint_list %}
+   <li><a href="/view/{{ blueprint.blue_key }}">{{ blueprint.blue_key }}</a></li>
+   {% endfor %}
+   </ul>
+</div>
+{% endblock %}
+{% block final %}
+{{ super() }}
+{% endblock %}
