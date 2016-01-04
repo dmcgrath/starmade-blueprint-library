@@ -286,7 +286,8 @@ def view(blue_key):
 
     if blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT:
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
-                                     blue_key).get()
+                                     blueprint.power_recharge,
+                                     blueprint.power_capacity, blue_key).get()
 
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
