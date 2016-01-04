@@ -29,3 +29,12 @@ def shield_rating(shield, max_shield):
        gauge_lowend = math.sin((shield/max_shield)*math.pi/2)
        gauge_highend = math.log(shield)/math.log(max_shield)
        return (gauge_lowend+gauge_highend)/2.0
+
+def valid_power(power):
+    try:
+        power = float(power)
+        if math.isnan(power) or math.isinf(power) or 0 < power > 99999999999:
+            return 0;
+        return power
+    except ValueError:
+        return 0

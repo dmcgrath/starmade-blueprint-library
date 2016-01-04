@@ -8,7 +8,7 @@ function details() {
         block = document.getElementById("element"+block_id)
         if(block) {
             block_count = block.innerHTML;
-            block.innerHTML = "<p>"+block_list[block_id]+": "+block_count+"</p>";
+            block.innerHTML = block_list[block_id]+": "+block_count;
         }
     }
 }

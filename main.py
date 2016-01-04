@@ -34,17 +34,21 @@ def upload():
 def submit():
     if request.method == 'POST':
         f = request.files['file']
+        power_recharge = starmade.valid_power(request.form['power_recharge'])
+        power_capacity = starmade.valid_power(request.form['power_capacity'])
         blueprint_title = None
         header = f.headers['Content-Type']
         parsed_header = parse_options_header(header)
         blob_key = parsed_header[1]['blob-key']
 
-        blue_key = process_blueprint(blob_key, blueprint_title)
+        blue_key = process_blueprint(blob_key, blueprint_title, power_recharge,
+                                     power_capacity)
 
         return render_template('finished_upload.html',
                                blue_key=blue_key.urlsafe())
 
-def process_blueprint(blob_key, blueprint_title, blue_key=None):
+def process_blueprint(blob_key, blueprint_title, power_recharge=0,
+                      power_capacity=0, blue_key=None):
     blob_info = blobstore.get(blob_key)
     blob = blob_info.open()
 
@@ -55,9 +59,10 @@ def process_blueprint(blob_key, blueprint_title, blue_key=None):
             blueprint_title = filename[:filename.find("/")].replace("_", " ")
             header_blob = zip_file.open(filename)
             return process_header(blob_key, header_blob, blueprint_title,
-                                  blue_key)
+                                  power_recharge, power_capacity, blue_key)
 
-def process_header(blob_key, blob, blueprint_title, blue_key=None):
+def process_header(blob_key, blob, blueprint_title, power_recharge=0,
+                   power_capacity=0, blue_key=None):
     version_struct = Struct('>i')
     ver = version_struct.unpack(blob.read(version_struct.size))[0]
     if ver > 65535:
@@ -260,6 +265,8 @@ def process_header(blob_key, blob, blueprint_title, blue_key=None):
     blueprint.max_dimension = max(length, width, height)
     blueprint.class_rank = int(max(math.log10(total_mass), 0))
     blueprint.title = blueprint_title
+    blueprint.power_recharge = power_recharge
+    blueprint.power_capacity = power_capacity
     blue_key = blueprint.put()
 
     return blue_key

@@ -1,4 +1,23 @@
-<form action="{{ uploadUri }}" method="POST" enctype="multipart/form-data">
-	Upload Blueprint: <input type="file" name="file"><br>
-	<input type="submit" name="submit" value="Submit">
-</form>
+{% extends "base.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}Upload Blueprint{% endblock %}
+{% block content %}
+<div id="headline" class="col">
+    <h2>Upload Blueprint</h2>
+</div>
+<div id="upload" class="col">
+  <form action="{{ uploadUri }}" method="POST" enctype="multipart/form-data">
+    Upload Blueprint (*.zip or *.sment): <input type="file" name="file"><br><br>
+    Power Recharge rate (e/sec): <input type="text" name="power_recharge" value="0" min="0" max="99999999"
+ step="0.1"><br><br>
+    Power Capacity (e): <input type="text" name="power_capacity" value="0" min="0" max="99999999"
+ step="0.1"><br><br>
+    <input type="submit" name="submit" value="Submit">
+  </form>
+</div>
+{% endblock %}
+{% block final %}
+{{ super() }}
+{% endblock %}
