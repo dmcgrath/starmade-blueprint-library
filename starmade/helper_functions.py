@@ -58,6 +58,8 @@ def valid_power(power):
         A float between 0.0 and 99999999999.0, rounding to 1 decimal place
     """
     try:
+        if power == None:
+            return 0
         power = round(float(power),1)
         if math.isnan(power) or math.isinf(power) or 0 < power > 99999999999:
             return 0;

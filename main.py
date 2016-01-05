@@ -76,6 +76,8 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     result = []
     result = header_struct.unpack(blob.read(header_struct.size))
 
+    entity_type = result[0]
+
     # -2 since core-only blueprint gives 2, -1 respectively.
     length = int(result[6] - result[3]) - 2
     width = int(result[4] - result[1]) - 2
@@ -84,7 +86,7 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     context = {
        "title": blueprint_title,
        "version": ver,
-       "entity": result[0],
+       "entity": entity_type,
        "length": length,
        "width": width,
        "height": height,
@@ -101,6 +103,7 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     element_list = []
     total_block_count = 0
     total_mass = 0
+    power_recharge_rating = 0
     complex_systems = {"salvage": 0, "astrotech": 0, "power_drain": 0,
                        "power_supply": 0, "shield_drain": 0, "shield_supply": 0}
 
@@ -114,10 +117,30 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
         if block_id == 2: # Power Block
             power_output = starmade.calc_power_output(block_count,
                                                       ship_dimensions)
-            context['power_recharge']['ideal_generator'] = round(power_output, 1)
+            ideal_generator = round(power_output, 1)
+            if power_recharge > ideal_generator or power_recharge == 0:
+               context['power_recharge']['ideal_generator'] = ideal_generator
+               context['power_efficieny_gauge'] = 100.0
+               power_recharge_rating = ideal_generator
+            else:
+               power_efficieny_gauge = power_recharge / ideal_generator
+               context['power_efficiency_gauge'] = round(power_efficieny_gauge * 100.0,1)
+               context['power_recharge']['power_recharge'] = power_recharge
+               power_recharge_rating = power_recharge
         elif block_id == 331: # Power Capacitor
-            power_capacity = starmade.calc_power_capacity(block_count)
-            context['power_capacity']['ideal_capacitor'] = round(power_capacity, 0)
+            power_storage = starmade.calc_power_capacity(block_count)
+            ideal_capacitor = round(power_storage, 1)
+            if entity_type == 0:
+                base_capacity = 50000
+            else:
+                base_capacity = 0
+            context['ideal_capacitor'] = ideal_capacitor
+            if power_capacity > ideal_capacitor + base_capacity or power_capacity == 0:
+               context['power_capacity']['ideal_capacitor'] = ideal_capacitor
+            else:
+               context['power_capacity']['power_capacity'] = power_capacity
+               power_capacity_gauge = power_capacity / ideal_capacitor
+               context['power_capacity_efficiency_gauge'] = round(power_capacity_gauge * 100.0,1)
         elif block_id == 8: # Thruster Block
             context['thrust'] = round(starmade.calc_thrust(block_count),1)
             context['power_usage']['thruster'] = round(-starmade.calc_thrust_power(block_count), 0)
@@ -234,12 +257,17 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     max_shield_recharge = starmade.calc_shield_recharge(total_block_count)
     shield_recharge_gauge = starmade.shield_rating(shields['recharge'],
                                                    max_shield_recharge)
+    max_power_output = starmade.calc_power_output(total_block_count, 
+                                                  ship_dimensions)
+    power_recharge_gauge = starmade.shield_rating(power_recharge_rating,
+                                                  max_power_output)
 
-    if context['entity'] == 0:
+    if entity_type == 0:
         context['thrust_gauge'] = round(thrust_gauge * 100.0,1)
         context['speed_coefficient'] = speed_coefficient
     context['shield_capacity_gauge'] = round(shield_capacity_gauge * 100.0,1)
     context['shield_recharge_gauge'] = round(shield_recharge_gauge * 100.0,1)
+    context['power_recharge_gauge'] = round(power_recharge_gauge * 100.0,1)
     context['power_recharge_sum'] = sum(context['power_recharge'].itervalues())
     context['power_capacity_sum'] = sum(context['power_capacity'].itervalues())
 
@@ -285,9 +313,11 @@ def view(blue_key):
     blueprint = ndb.Key(urlsafe=blue_key).get()
 
     if blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT:
+       power_recharge = starmade.valid_power(blueprint.power_recharge)
+       power_capacity = starmade.valid_power(blueprint.power_capacity)
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
-                                     blueprint.power_recharge,
-                                     blueprint.power_capacity, blue_key).get()
+                                     power_recharge, power_capacity,
+                                     blue_key).get()
 
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")

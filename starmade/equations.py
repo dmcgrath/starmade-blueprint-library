@@ -2,7 +2,14 @@
 
 # For example, thrust and max speed given mass and number of thrusters.
 
-MAX_SIZE_POWER = 2000000
+# TODO(danmcg): Pull number from blockBehaviorConfig.xml <PowerCeiling>
+POWER_CEILING = 2000000
+# TODO(danmcg): Pull number from blockBehaviorConfig.xml <PowerDivFactor>
+POWER_DIV_FACTOR = 0.333
+# TODO(danmcg): Pull number from blockBehaviorConfig.xml <PowerGrowth>
+POWER_GROWTH = 1.000348
+# TODO(danmcg): Pull number from blockBehaviorConfig.xml <PowerLinearGrowth>
+POWER_LINEAR_GROWTH = 25.0
 
 # Returns the maximum possible power recharge rate based upon number of power
 # modules and maximum dimensions of the containing area.
@@ -20,7 +27,7 @@ def calc_power_output(block_count, ship_dimensions):
     Returns:
         A float for the maximum possible 'e/sec' recharge rate
     """
-    block_power = block_count * 25.0
+    block_power = block_count * POWER_LINEAR_GROWTH
     max_dimensions = block_count + 2.0
     if max_dimensions > ship_dimensions:
         remainder_dimensions = (block_count % (ship_dimensions-2.0)) + 2.0
@@ -28,16 +35,16 @@ def calc_power_output(block_count, ship_dimensions):
         max_mod /= (ship_dimensions-2.0)
         group_power = pow(ship_dimensions/3.0,1.7) * max_mod
         group_power += pow(remainder_dimensions/3.0,1.7)
-        size_power = 2.0/(1.0+pow(1.000696,-0.333*group_power))-1.0
-        size_power *= 1000000.0
+        size_power = 2.0/(1.0+pow(POWER_GROWTH,-POWER_DIV_FACTOR*group_power))-1.0
+        size_power *= POWER_CEILING
     else:
-        size_power = 2/(1+pow(1.000696,-0.333*pow(max_dimensions/3.0,1.7)))-1.0
-        size_power *= 1000000.0
+        size_power = 2/(1+pow(POWER_GROWTH,-POWER_DIV_FACTOR*pow(max_dimensions/3.0,1.7)))-1.0
+        size_power *= POWER_CEILING
 
-    if size_power > MAX_SIZE_POWER:
-      size_power = MAX_SIZE_POWER
-
-    return block_power + size_power
+    if size_power > POWER_CEILING:
+        return block_power + POWER_CEILING
+    else:
+        return block_power + size_power
 
 def calc_power_capacity(block_count):
     """ Calculate the power capacity of a contiguous group of power capacitors

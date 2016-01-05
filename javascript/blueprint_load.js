@@ -4,6 +4,9 @@ function details() {
     redraw("thrust")
     redraw("shieldCapacity")
     redraw("shieldRecharge")
+    redraw("powerCapacityEfficiency")
+    redraw("powerEfficiency")
+    redraw("powerRecharge")
     for (var block_id in block_list) {
         block = document.getElementById("element"+block_id)
         if(block) {
