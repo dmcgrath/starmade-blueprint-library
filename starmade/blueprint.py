@@ -19,4 +19,5 @@ class Blueprint(ndb.Model):
     class_rank = ndb.IntegerProperty(indexed=True)
     power_recharge = ndb.FloatProperty(indexed=False)
     power_capacity = ndb.FloatProperty(indexed=False)
+    date_created = ndb.DateTimeProperty(indexed=True, auto_now_add=True)
     title = ndb.StringProperty(indexed=True) # Indexed for Projection only
