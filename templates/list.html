@@ -18,6 +18,12 @@
       </ul>
     </ol>
 {% endfor %}
+<br>
+Go: <a href="/list/">Beginning</a>
+{% if more_flag %}
+ | <a href="/list/{{ next_curs }}">Next Page</a>
+{% endif %}
+<br>
 </div>
 {% endblock %}
 {% block final %}

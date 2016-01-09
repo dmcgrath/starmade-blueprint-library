@@ -1,5 +1,6 @@
 """`main` is the top level module for the blueprint indexer Flask app)"""
 
+from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
 from starmade import Blueprint
@@ -330,14 +331,25 @@ def delete(blue_key):
     blobstore.get(blue_key.get().blob_key).delete()
     blue_key.delete()
     return redirect(url_for('list'),303)
-    
+
 
 @app.route("/list/")
-def list():
-    query = Blueprint.query()
-    list_query = query.iter(projection=[Blueprint.title, Blueprint.class_rank])
+def list_new():
+    return list()
+
+@app.route("/list/<cursor_token>")
+def list(cursor_token=None):
+    query = Blueprint.query(projection=[Blueprint.title, Blueprint.class_rank])
+    if cursor_token != None:
+       curs = Cursor(urlsafe=cursor_token)
+    else:
+       curs = None
+
+    list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs)
+
     blueprint_list = [{"blue_key": r.key.urlsafe(), "title": r.title, "class_rank": r.class_rank} for r in list_query]
-    return render_template("list.html", blueprint_list=blueprint_list)
+    return render_template("list.html", blueprint_list=blueprint_list,
+                           next_curs=next_curs.urlsafe(), more_flag=more_flag)
 
 @app.route("/old/")
 def old_list():
