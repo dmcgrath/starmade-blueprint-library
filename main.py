@@ -429,14 +429,19 @@ def search_list(cursor_token=None):
     list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs,
                                                         projection=projection)
 
-    blueprint_list = [{"blue_key": r.key.urlsafe(),
-                       "title": r.title,
-                       "class_rank": r.class_rank} for r in list_query]
+    if static_class is None:
+        blueprint_list = [{"blue_key": r.key.urlsafe(),
+                           "title": r.title,
+                           "class_rank": r.class_rank} for r in list_query]
+    else:
+        blueprint_list = [{"blue_key": r.key.urlsafe(),
+                           "title": r.title,
+                           "class_rank": static_class} for r in list_query]
 
     return render_template("search_results.html", blueprint_list=blueprint_list,
                            next_curs=next_curs.urlsafe(), more_flag=more_flag,
                            search_type=search_type, filter_op=filter_op,
-                           filter_value=filter_value, static_class=static_class)
+                           filter_value=filter_value)
 @app.errorhandler(404)
 def page_not_found(e):
     """Return a custom 404 error."""
