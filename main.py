@@ -325,7 +325,7 @@ def view(blue_key):
     context['blue_key'] = blue_key
     return render_template('view_blueprint.html', **context)
 
-@app.route("/delete/<blue_key>")
+@app.route("/delete/<blue_key>", methods=['DELETE'])
 def delete(blue_key):
     blue_key = ndb.Key(urlsafe=blue_key)
     blobstore.get(blue_key.get().blob_key).delete()
@@ -355,13 +355,14 @@ def list(cursor_token=None):
 def old_list():
     query = Blueprint.query(Blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT)
     blueprint_list = [{"blue_key":result.urlsafe()} for result in query.iter(keys_only=True)]
-    return render_template("old.html", blueprint_list=blueprint_list)
 
-#@app.route('/')
-#def hello():
-#    """Return a friendly HTTP greeting."""
-#    return 'Hello World!'
+@app.route("/search/")
+def search():
+    return render_template('search.html')
 
+@app.route("/search/list/")
+def search_list():
+    return render_template('search.html')
 
 @app.errorhandler(404)
 def page_not_found(e):

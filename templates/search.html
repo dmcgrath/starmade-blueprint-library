@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}Search Blueprint{% endblock %}
+{% block content %}
+<div id="headline" class="col">
+    <h2>Search Blueprints</h2>
+</div>
+<div id="search" class="col">
+  <form action="/search/list/" method="GET">
+    <fieldset>
+      <legend>Search Type</legend>
+      <input type="radio" name="search_type" value="class_rank" checked> Class Rank
+      <br>
+      <input type="radio" name="search_type" value="simple"> Material Simplicity
+      <br>
+      <input type="radio" name="search_type" value="dimensions"> Max Dimensions
+      <br>
+    </fieldset>
+<br>
+    <fieldset>
+      <legend>Comparison Type</legend>
+      <input type="radio" name="filter" value="lesser_equal" checked> Lesser than or Equal to (<=)
+      <br>
+      <input type="radio" name="filter" value="equal" checked> Equal to (=)
+      <br>
+      <input type="radio" name="filter" value="greater_equal" checked> Greater than or Equal to (>=)
+      <br><br>
+      Value to compare against:
+      <br>
+      <input type="text" name="value" value="0" min="0" max="9999" step="1">
+    </fieldset>
+<br>
+    <input type="submit" name="submit" value="Search!">
+    <br>
+  </form>
+</div>
+{% endblock %}
+{% block final %}
+{{ super() }}
+{% endblock %}
