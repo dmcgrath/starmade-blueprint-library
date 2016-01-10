@@ -381,11 +381,16 @@ def search_list(cursor_token=None):
         # somehow an invalid value was returned
         return redirect(url_for('search'),303)
 
-    query = Blueprint.query(projection=[Blueprint.title, Blueprint.class_rank])
+    projection=[Blueprint.title, Blueprint.class_rank]
+    query = Blueprint.query()
+    static_class = None
+
     if search_type == "class_rank":
         if filter_op == "lesser_equal":
             query = query.filter(Blueprint.class_rank <= filter_value)
         elif filter_op == "equal":
+            projection=[Blueprint.title]
+            static_class = filter_value
             query = query.filter(Blueprint.class_rank == filter_value)
         elif filter_op == "greater_equal":
             query = query.filter(Blueprint.class_rank >= filter_value)
@@ -421,16 +426,17 @@ def search_list(cursor_token=None):
     else:
        curs = None
 
-    list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs)
+    list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs,
+                                                        projection=projection)
 
     blueprint_list = [{"blue_key": r.key.urlsafe(),
                        "title": r.title,
                        "class_rank": r.class_rank} for r in list_query]
 
-    return render_template("list.html", blueprint_list=blueprint_list,
+    return render_template("search_results.html", blueprint_list=blueprint_list,
                            next_curs=next_curs.urlsafe(), more_flag=more_flag,
                            search_type=search_type, filter_op=filter_op,
-                           filter_value=filter_value)
+                           filter_value=filter_value, static_class=static_class)
 @app.errorhandler(404)
 def page_not_found(e):
     """Return a custom 404 error."""
