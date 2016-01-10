@@ -330,7 +330,7 @@ def delete(blue_key):
     blue_key = ndb.Key(urlsafe=blue_key)
     blobstore.get(blue_key.get().blob_key).delete()
     blue_key.delete()
-    return redirect(url_for('list'),303)
+    return redirect(url_for('list',cursor_token=None),303)
 
 
 @app.route("/list/")
