@@ -347,7 +347,9 @@ def list(cursor_token=None):
 
     list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs)
 
-    blueprint_list = [{"blue_key": r.key.urlsafe(), "title": r.title, "class_rank": r.class_rank} for r in list_query]
+    blueprint_list = [{"blue_key": r.key.urlsafe(),
+                       "title": r.title,
+                       "class_rank": r.class_rank} for r in list_query]
     return render_template("list.html", blueprint_list=blueprint_list,
                            next_curs=next_curs.urlsafe(), more_flag=more_flag)
 
@@ -361,9 +363,74 @@ def search():
     return render_template('search.html')
 
 @app.route("/search/list/")
-def search_list():
-    return render_template('search.html')
+def search_list_new():
+    return search_list()
 
+@app.route("/search/list/<cursor_token>")
+def search_list(cursor_token=None):
+    search_type = request.args['search_type']
+    filter_op = request.args['filter_op']
+
+    try:
+        filter_value = int(request.args['filter_value'])
+        if filter_value < 0:
+            filter_value = 0
+        elif filter_value > 9999:
+            filter_Value = 9999
+    except ValueError:
+        # somehow an invalid value was returned
+        return redirect(url_for('search'),303)
+
+    query = Blueprint.query(projection=[Blueprint.title, Blueprint.class_rank])
+    if search_type == "class_rank":
+        if filter_op == "lesser_equal":
+            query = query.filter(Blueprint.class_rank <= filter_value)
+        elif filter_op == "equal":
+            query = query.filter(Blueprint.class_rank == filter_value)
+        elif filter_op == "greater_equal":
+            query = query.filter(Blueprint.class_rank >= filter_value)
+        else:
+            # someone edited the page
+            return redirect(url_for('search'),303)
+    elif search_type == "simple":
+        if filter_op == "lesser_equal":
+            query = query.filter(Blueprint.element_count <= filter_value)
+        elif filter_op == "equal":
+            query = query.filter(Blueprint.element_count == filter_value)
+        elif filter_op == "greater_equal":
+            query = query.filter(Blueprint.element_count >= filter_value)
+        else:
+            # someone edited the page
+            return redirect(url_for('search'),303)
+    elif search_type == "dimensions":
+        if filter_op == "lesser_equal":
+            query = query.filter(Blueprint.max_dimensions <= filter_value)
+        elif filter_op == "equal":
+            query = query.filter(Blueprint.max_dimensions == filter_value)
+        elif filter_op == "greater_equal":
+            query = query.filter(Blueprint.max_dimensions >= filter_value)
+        else:
+            # someone edited the page
+            return redirect(url_for('search'),303)
+    else:
+        # someone edited the page
+        return redirect(url_for('search'),303)
+
+    if cursor_token != None:
+       curs = Cursor(urlsafe=cursor_token)
+    else:
+       curs = None
+
+    list_query, next_curs, more_flag = query.fetch_page(50, start_cursor=curs)
+
+    blueprint_list = [{"blue_key": r.key.urlsafe(),
+                       "title": r.title,
+                       "class_rank": r.class_rank} for r in list_query]
+
+    return render_template("list.html", blueprint_list=blueprint_list,
+                           next_curs=next_curs.urlsafe(), more_flag=more_flag,
+                           search_type=search_type, filter_op=filter_op,
+                           filter_value=filter_value)
 @app.errorhandler(404)
 def page_not_found(e):
     """Return a custom 404 error."""
