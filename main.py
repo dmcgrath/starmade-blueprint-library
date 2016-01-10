@@ -325,7 +325,7 @@ def view(blue_key):
     context['blue_key'] = blue_key
     return render_template('view_blueprint.html', **context)
 
-@app.route("/delete/<blue_key>", methods=['DELETE'])
+@app.route("/delete/<blue_key>", methods=['POST'])
 def delete(blue_key):
     blue_key = ndb.Key(urlsafe=blue_key)
     blobstore.get(blue_key.get().blob_key).delete()
