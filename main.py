@@ -332,7 +332,6 @@ def delete(blue_key):
     blue_key.delete()
     return redirect(url_for('list',cursor_token=""),303)
 
-
 @app.route("/list/")
 def list_new():
     return list()
