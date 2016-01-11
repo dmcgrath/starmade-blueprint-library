@@ -296,6 +296,8 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     blueprint.title = blueprint_title
     blueprint.power_recharge = power_recharge
     blueprint.power_capacity = power_capacity
+    blueprint.systems = context['systems'].keys()
+
     blue_key = blueprint.put()
 
     return blue_key

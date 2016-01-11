@@ -2,7 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 
-SCHEMA_VERSION_CURRENT = 20
+SCHEMA_VERSION_CURRENT = 21
 
 class Blueprint(ndb.Model):
     """Datastore Entity for Blueprints"""
@@ -19,5 +19,6 @@ class Blueprint(ndb.Model):
     power_capacity = ndb.FloatProperty(indexed=False)
     schema_version = ndb.IntegerProperty(indexed=True,
                                          default=SCHEMA_VERSION_CURRENT)
+    systems = ndb.StringProperty(indexed=False, repeated=True)
     title = ndb.StringProperty(indexed=True) # Indexed for Projection only
     width = ndb.IntegerProperty(indexed=True)
