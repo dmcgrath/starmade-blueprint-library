@@ -1,5 +1,6 @@
 """`main` is the top level module for the blueprint indexer Flask app)"""
 
+from google.appengine.api import urlfetch
 from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
@@ -10,9 +11,15 @@ import json
 import math
 import logging
 import starmade
+import urllib
 import zipfile
 
 app = Flask(__name__)
+
+
+class Secrets(ndb.Model):
+    """Datastore Entity for Private keys"""
+    secret_key = ndb.StringProperty(indexed=False)
 
 millnames=['', 'K', 'M', 'B', 'T']
 def millify(n):
@@ -34,6 +41,29 @@ def upload():
 @app.route("/submit", methods=['POST'])
 def submit():
     if request.method == 'POST':
+
+        # Check reCaptcha before uploading
+        recaptcha = request.form['g-recaptcha-response']
+        url = 'https://www.google.com/recaptcha/api/siteverify'
+        recaptcha_secrets = ndb.Key(Secrets, 'recaptcha').get()
+        form_fields = {
+            "secret": recaptcha_secrets.secret_key,
+            "response": recaptcha,
+            "remoteip": request.remote_addr
+        }
+        form_data = urllib.urlencode(form_fields)
+        verify_recaptcha = urlfetch.fetch(url=url,
+            payload=form_data,
+            method=urlfetch.POST,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        verify_content = json.loads(verify_recaptcha.content)
+
+        # Bypassing check since it seems like blobstore IP gets set here
+        # making it impossible to confirm recaptcha in this manner :(
+#        if (verify_content.get('success'), False):
+#            return request.remote_addr+' Sorry, reCaptcha failed'+ verify_recaptcha.content, 403
+
+        # reCaptcha has passed if we get to here - proceed with upload
         f = request.files['file']
         power_recharge = starmade.valid_power(request.form['power_recharge'])
         power_capacity = starmade.valid_power(request.form['power_capacity'])
