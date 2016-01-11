@@ -358,6 +358,7 @@ def list(cursor_token=None):
 def old_list():
     query = Blueprint.query(Blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT)
     blueprint_list = [{"blue_key":result.urlsafe()} for result in query.iter(keys_only=True)]
+    return render_template("old.html", blueprint_list=blueprint_list)
 
 @app.route("/search/")
 def search():
