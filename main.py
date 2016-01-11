@@ -411,11 +411,11 @@ def search_list(cursor_token=None):
             return redirect(url_for('search'),303)
     elif search_type == "dimensions":
         if filter_op == "lesser_equal":
-            query = query.filter(Blueprint.max_dimensions <= filter_value)
+            query = query.filter(Blueprint.max_dimension <= filter_value)
         elif filter_op == "equal":
-            query = query.filter(Blueprint.max_dimensions == filter_value)
+            query = query.filter(Blueprint.max_dimension == filter_value)
         elif filter_op == "greater_equal":
-            query = query.filter(Blueprint.max_dimensions >= filter_value)
+            query = query.filter(Blueprint.max_dimension >= filter_value)
         else:
             # someone edited the page
             return redirect(url_for('search'),303)
