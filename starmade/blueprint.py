@@ -2,7 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 
-SCHEMA_VERSION_CURRENT = 21
+SCHEMA_VERSION_CURRENT = 22
 
 class Blueprint(ndb.Model):
     """Datastore Entity for Blueprints"""
