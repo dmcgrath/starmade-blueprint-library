@@ -1,6 +1,6 @@
 """`main` is the top level module for the blueprint indexer Flask app)"""
 
-from google.appengine.api import urlfetch
+from google.appengine.api import taskqueue, urlfetch
 from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
@@ -74,6 +74,10 @@ def submit():
 
         blue_key = process_blueprint(blob_key, blueprint_title, power_recharge,
                                      power_capacity)
+
+        # process attachments
+        taskqueue.add(url="/find_attachments", queue_name="deepdive",
+                      params={"blob_key": blob_key, "blue_key": blue_key})
 
         return render_template('finished_upload.html',
                                blue_key=blue_key.urlsafe())
@@ -475,6 +479,45 @@ def search_list(cursor_token=None):
                            next_curs=next_curs.urlsafe(), more_flag=more_flag,
                            search_type=search_type, filter_op=filter_op,
                            filter_value=filter_value)
+
+@app.route("/find_attachments", methods=['POST'])
+def find_attachments():
+    MAX_TASKS = 10
+    blob_key = request.form['blob_key']
+    blue_key = request.form['blue_key']
+
+    blob_info = blobstore.get(blob_key)
+    blob = blob_info.open()
+
+    task_bundle = []
+    with zipfile.ZipFile(file=blob, mode="r") as zip_file:
+        for filename in (name for name in zip_file.namelist()
+                         if name.endswith('/header.smbph')
+                            and name.count('/') > 1):
+            attachment_title = filename
+            parent_path = filename[filename.find('/'):filename.rfind('/')]
+            parent_depth = parent_path.count('/')
+            header_blob = zip_file.open(filename)
+            attachment = {"depth": parent_depth, "path": parent_path,
+                          "header": header_blob.read().encode("base64")}
+
+            payload_str = json.dumps(attachment)
+            task_bundle.append(payload_str)
+            if len(task_bundle) >= MAX_TASKS:
+                tasks_str = json.dumps(task_bundle)
+                payload = json.dumps({"blue_key": blue_key, "tasks": tasks_str})
+                taskqueue.add(url="/add_attachments", queue_name="expand",
+                              payload=payload)
+                task_bundle = []
+
+    if len(task_bundle) > 0:
+        tasks_str = json.dumps(task_bundle)
+        payload = json.dumps({"blue_key": blue_key, "tasks": tasks_str})
+        taskqueue.add(url="/add_attachments", queue_name="expand",
+                      payload=payload)
+
+    return 'OK', 200
+
 @app.errorhandler(404)
 def page_not_found(e):
     """Return a custom 404 error."""
