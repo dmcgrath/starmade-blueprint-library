@@ -515,8 +515,7 @@ def find_attachments():
                 task_bundle = []
 
     if len(task_bundle) > 0:
-        tasks_str = json.dumps(task_bundle)
-        payload = json.dumps({"blue_key": blue_key, "tasks": tasks_str})
+        payload = json.dumps({"blue_key": blue_key, "tasks": task_bundle})
         taskqueue.add(url="/add_attachments", queue_name="expand",
                       payload=payload)
 
