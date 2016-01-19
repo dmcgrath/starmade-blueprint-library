@@ -4,13 +4,14 @@ from google.appengine.api import taskqueue, urlfetch
 from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
-from starmade import Blueprint
+from starmade import Blueprint, BlueprintAttachment
 from struct import Struct
 from werkzeug import parse_options_header
 import json
 import math
 import logging
 import starmade
+import StringIO
 import urllib
 import zipfile
 
@@ -77,7 +78,7 @@ def submit():
 
         # process attachments
         taskqueue.add(url="/find_attachments", queue_name="deepdive",
-                      params={"blob_key": blob_key, "blue_key": blue_key})
+                      params={"blob_key": blob_key, "blue_key": blue_key.urlsafe()})
 
         return render_template('finished_upload.html',
                                blue_key=blue_key.urlsafe())
@@ -93,11 +94,15 @@ def process_blueprint(blob_key, blueprint_title, power_recharge=0,
                             and name.count('/') <= 1):
             blueprint_title = filename[:filename.find("/")].replace("_", " ")
             header_blob = zip_file.open(filename)
-            return process_header(blob_key, header_blob, blueprint_title,
-                                  power_recharge, power_capacity, blue_key)
+            blueprint = process_header(Blueprint, blob_key, header_blob,
+                                       blueprint_title, power_recharge,
+                                       power_capacity, blue_key)
 
-def process_header(blob_key, blob, blueprint_title, power_recharge=0,
-                   power_capacity=0, blue_key=None):
+            blue_key = blueprint.put()
+            return blue_key
+
+def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
+                   power_capacity=0, blue_key=None, ancestor_key=None):
     version_struct = Struct('>i')
     ver = version_struct.unpack(blob.read(version_struct.size))[0]
     if ver > 65535:
@@ -313,11 +318,14 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     else:
         context['idle_time_charge'] = "N/A"
 
-    if blue_key == None:
-        blueprint = Blueprint()
+    if ancestor_key == None:
+        if blue_key == None:
+            blueprint = Kind()
+        else:
+            blueprint = ndb.Key(urlsafe=blue_key).get()
+            blueprint.schema_version = starmade.SCHEMA_VERSION_CURRENT
     else:
-        blueprint = ndb.Key(urlsafe=blue_key).get()
-        blueprint.schema_version = starmade.SCHEMA_VERSION_CURRENT
+        blueprint = Kind(id=blue_key, parent=ancestor_key)
 
     blueprint.blob_key = blob_key
     blueprint.context = json.dumps(context)
@@ -333,9 +341,7 @@ def process_header(blob_key, blob, blueprint_title, power_recharge=0,
     blueprint.power_capacity = power_capacity
     blueprint.systems = context['systems'].keys()
 
-    blue_key = blueprint.put()
-
-    return blue_key
+    return blueprint
 
 @app.route("/blueprint/<blob_key>")
 def download_blueprint(blob_key):
@@ -501,11 +507,9 @@ def find_attachments():
             attachment = {"depth": parent_depth, "path": parent_path,
                           "header": header_blob.read().encode("base64")}
 
-            payload_str = json.dumps(attachment)
-            task_bundle.append(payload_str)
+            task_bundle.append(attachment)
             if len(task_bundle) >= MAX_TASKS:
-                tasks_str = json.dumps(task_bundle)
-                payload = json.dumps({"blue_key": blue_key, "tasks": tasks_str})
+                payload = json.dumps({"blue_key": blue_key, "tasks": task_bundle})
                 taskqueue.add(url="/add_attachments", queue_name="expand",
                               payload=payload)
                 task_bundle = []
@@ -515,6 +519,29 @@ def find_attachments():
         payload = json.dumps({"blue_key": blue_key, "tasks": tasks_str})
         taskqueue.add(url="/add_attachments", queue_name="expand",
                       payload=payload)
+
+    return 'OK', 200
+
+@app.route("/add_attachments", methods=['POST'])
+def add_attachments():
+    task_bundle = json.loads(request.data)
+    blue_key = task_bundle["blue_key"]
+    ancestor_key = ndb.Key(urlsafe=blue_key)
+
+    attachments = []
+    for task in task_bundle['tasks']:
+        logging.info(task)
+        path = task['path']
+        header_blob = task['header'].decode("base64")
+        header_file = StringIO.StringIO(header_blob)
+        blueprint = process_header(BlueprintAttachment, "", header_file, path,
+                                   power_recharge=0, power_capacity=50000,
+                                   blue_key=path, ancestor_key=ancestor_key)
+        attachments.append(blueprint)
+
+    # TODO: transaction
+    attachment_keys = ndb.put_multi(attachments)
+    # Need to catch errors here and retry
 
     return 'OK', 200
 
