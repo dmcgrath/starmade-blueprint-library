@@ -2,7 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 
-SCHEMA_VERSION_CURRENT = 22
+SCHEMA_VERSION_CURRENT = 23
 
 class Blueprint(ndb.Model):
     """Datastore Entity for Blueprints"""
@@ -24,7 +24,7 @@ class Blueprint(ndb.Model):
     width = ndb.IntegerProperty(indexed=True)
 
 class BlueprintAttachment(ndb.Model):
-    """Datastore Entity for Blueprints"""
+    """Datastore Entity for Attachments on Blueprints"""
     blob_key = ndb.StringProperty(indexed=False)
     class_rank = ndb.IntegerProperty(indexed=True)
     context = ndb.JsonProperty(indexed=False)
@@ -35,7 +35,7 @@ class BlueprintAttachment(ndb.Model):
     height = ndb.IntegerProperty(indexed=True)
     length = ndb.IntegerProperty(indexed=True)
     max_dimension = ndb.IntegerProperty(indexed=True)
-    path = ndb.StringProperty(indexed=False)
+    path = ndb.StringProperty(indexed=True, repeated=True)
     power_recharge = ndb.FloatProperty(indexed=False)
     power_capacity = ndb.FloatProperty(indexed=False)
     schema_version = ndb.IntegerProperty(indexed=True,

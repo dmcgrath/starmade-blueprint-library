@@ -8,8 +8,8 @@ from starmade import Blueprint, BlueprintAttachment
 from struct import Struct
 from werkzeug import parse_options_header
 import json
-import math
 import logging
+import math
 import starmade
 import StringIO
 import urllib
@@ -102,7 +102,7 @@ def process_blueprint(blob_key, blueprint_title, power_recharge=0,
             return blue_key
 
 def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
-                   power_capacity=0, blue_key=None, ancestor_key=None):
+                   power_capacity=0, blue_key=None, ancestor_key=None, paths=[]):
     version_struct = Struct('>i')
     ver = version_struct.unpack(blob.read(version_struct.size))[0]
     if ver > 65535:
@@ -326,6 +326,8 @@ def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
             blueprint.schema_version = starmade.SCHEMA_VERSION_CURRENT
     else:
         blueprint = Kind(id=blue_key, parent=ancestor_key)
+        blueprint.path = paths
+        blueprint.depth = len(paths)
 
     blueprint.blob_key = blob_key
     blueprint.context = json.dumps(context)
@@ -362,6 +364,11 @@ def view(blue_key):
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
                                      power_recharge, power_capacity,
                                      blue_key).get()
+       if blueprint.schema_version < 23:
+          # process attachments
+          taskqueue.add(url="/find_attachments", queue_name="deepdive",
+                        params={"blob_key": blueprint.blob_key,
+                                "blue_key": blue_key})
 
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
@@ -504,7 +511,7 @@ def find_attachments():
             parent_path = filename[filename.find('/'):filename.rfind('/')]
             parent_depth = parent_path.count('/')
             header_blob = zip_file.open(filename)
-            attachment = {"depth": parent_depth, "path": parent_path,
+            attachment = {"path": parent_path,
                           "header": header_blob.read().encode("base64")}
 
             task_bundle.append(attachment)
@@ -531,11 +538,17 @@ def add_attachments():
     for task in task_bundle['tasks']:
         logging.info(task)
         path = task['path']
+        parent_paths = []
+        partial_path = ""
+        for part in path[1:].split('/'):
+            partial_path += '/' + part
+            parent_paths.append(partial_path)
         header_blob = task['header'].decode("base64")
         header_file = StringIO.StringIO(header_blob)
         blueprint = process_header(BlueprintAttachment, "", header_file, path,
                                    power_recharge=0, power_capacity=50000,
-                                   blue_key=path, ancestor_key=ancestor_key)
+                                   blue_key=path, ancestor_key=ancestor_key,
+                                   paths=parent_paths)
         attachments.append(blueprint)
 
     # TODO: transaction
