@@ -2,7 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 
-SCHEMA_VERSION_CURRENT = 23
+SCHEMA_VERSION_CURRENT = 24
 
 class Blueprint(ndb.Model):
     """Datastore Entity for Blueprints"""
@@ -12,6 +12,7 @@ class Blueprint(ndb.Model):
     date_created = ndb.DateTimeProperty(indexed=True, auto_now_add=True)
     element_count = ndb.IntegerProperty(indexed=True)
     elements = ndb.JsonProperty(indexed=False)
+    header_hash = ndb.StringProperty(indexed=False)
     height = ndb.IntegerProperty(indexed=True)
     length = ndb.IntegerProperty(indexed=True)
     max_dimension = ndb.IntegerProperty(indexed=True)
@@ -28,10 +29,10 @@ class BlueprintAttachment(ndb.Model):
     blob_key = ndb.StringProperty(indexed=False)
     class_rank = ndb.IntegerProperty(indexed=True)
     context = ndb.JsonProperty(indexed=False)
-    date_created = ndb.DateTimeProperty(indexed=True, auto_now_add=True)
     depth = ndb.IntegerProperty(indexed=True)
     element_count = ndb.IntegerProperty(indexed=True)
     elements = ndb.JsonProperty(indexed=False)
+    header_hash = ndb.StringProperty(indexed=True)
     height = ndb.IntegerProperty(indexed=True)
     length = ndb.IntegerProperty(indexed=True)
     max_dimension = ndb.IntegerProperty(indexed=True)

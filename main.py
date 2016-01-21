@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, make_response, redirect, url_
 from starmade import Blueprint, BlueprintAttachment
 from struct import Struct
 from werkzeug import parse_options_header
+import hashlib
 import json
 import logging
 import math
@@ -103,8 +104,11 @@ def process_blueprint(blob_key, blueprint_title, power_recharge=0,
 
 def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
                    power_capacity=0, blue_key=None, ancestor_key=None, paths=[]):
+
+    header_blob = StringIO.StringIO(blob.read())
+
     version_struct = Struct('>i')
-    ver = version_struct.unpack(blob.read(version_struct.size))[0]
+    ver = version_struct.unpack(header_blob.read(version_struct.size))[0]
     if ver > 65535:
         endian = '<'
         ver = ver<<24&0xFF000000|ver<<8&0xFF0000|ver>>8&0xFF00|ver>>24&0xFF
@@ -114,7 +118,7 @@ def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
     block_struct = Struct(endian + 'hi') # BlockID<short>, blockCount<int>
 
     result = []
-    result = header_struct.unpack(blob.read(header_struct.size))
+    result = header_struct.unpack(header_blob.read(header_struct.size))
 
     entity_type = result[0]
 
@@ -148,7 +152,7 @@ def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
                        "power_supply": 0, "shield_drain": 0, "shield_supply": 0}
 
     for element in xrange(0, element_count):
-        new_element = block_struct.unpack(blob.read(block_struct.size))
+        new_element = block_struct.unpack(header_blob.read(block_struct.size))
         element_list.append([new_element])
         block_id = new_element[0]
         block_count = new_element[1]
@@ -343,6 +347,9 @@ def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
     blueprint.power_capacity = power_capacity
     blueprint.systems = context['systems'].keys()
 
+    header_blob.seek(0)
+    blueprint.header_hash = hashlib.md5(header_blob.read()).hexdigest()
+
     return blueprint
 
 @app.route("/blueprint/<blob_key>")
@@ -357,14 +364,14 @@ def view(blue_key):
     roman = {-1: "N", 0: "N", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
              6: "VI", 7: "VII", 8: "VIII"}
     blueprint = ndb.Key(urlsafe=blue_key).get()
-
-    if blueprint.schema_version < starmade.SCHEMA_VERSION_CURRENT:
+    schema_version = blueprint.schema_version
+    if schema_version < starmade.SCHEMA_VERSION_CURRENT:
        power_recharge = starmade.valid_power(blueprint.power_recharge)
        power_capacity = starmade.valid_power(blueprint.power_capacity)
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
                                      power_recharge, power_capacity,
                                      blue_key).get()
-       if blueprint.schema_version < 23:
+       if schema_version < 24:
           # process attachments
           taskqueue.add(url="/find_attachments", queue_name="deepdive",
                         params={"blob_key": blueprint.blob_key,
