@@ -2,7 +2,7 @@
 
 from google.appengine.ext import blobstore, ndb
 
-SCHEMA_VERSION_CURRENT = 24
+SCHEMA_VERSION_CURRENT = 25
 
 class Blueprint(ndb.Model):
     """Datastore Entity for Blueprints"""
@@ -42,4 +42,5 @@ class BlueprintAttachment(ndb.Model):
     schema_version = ndb.IntegerProperty(indexed=True,
                                          default=SCHEMA_VERSION_CURRENT)
     systems = ndb.StringProperty(indexed=False, repeated=True)
+    title = ndb.StringProperty(indexed=True) # Indexed for Projection only
     width = ndb.IntegerProperty(indexed=True)

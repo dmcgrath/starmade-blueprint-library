@@ -9,8 +9,8 @@
 </div>
 <div id="list" class="col">
 {% for rank in range(8) %}
-    <ol class="bp" seq="{{rank}}">
-      <il><h2>Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][rank]}}</h2></il>
+    <ol class="bp" seq="{{ rank }}">
+      <il><h2 data-class="{{ rank }}">Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][rank]}}</h2></il>
       <ul class="bp">
       {% for blueprint in blueprint_list if blueprint.class_rank == rank %}
       <li class="bp"><h2><a href="/view/{{ blueprint.blue_key }}">{{ blueprint.title }}</a></h2></li>

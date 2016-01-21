@@ -7,7 +7,7 @@
 {% block content %}
   <div id="headline" class="col">
     <h1>{{ title }}</h1>
-    <h3>{{ ["Ship","Shop","Space Station","Asteroid","Planet"][entity] }}: {{ class }}</h3>
+    <h3>Attachment: {{ class }}</h3>
     <!-- Blueprint Schema Version: {{ version }}<br> -->
   </div>
   <div class="data">
@@ -137,12 +137,7 @@
         <h4>Structures</h4>
       </div>
       <div class="datum">
-        <strong>Docked List:</strong>
-        <ul>
-        {% for attachment in attachment_list %}
-          <li><a href="/view_attachment/{{ attachment.blue_key  }}">Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][attachment.class_rank]}}</a></li>
-        {% endfor %}
-        </ul>
+        <strong>Docked on:</strong> <a href="/view/{{ parent }}">{{ parent_title }}</a>
       </div>
     </div>
     <div class="col middle">

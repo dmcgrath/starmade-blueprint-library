@@ -363,7 +363,8 @@ def download_blueprint(blob_key):
 def view(blue_key):
     roman = {-1: "N", 0: "N", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
              6: "VI", 7: "VII", 8: "VIII"}
-    blueprint = ndb.Key(urlsafe=blue_key).get()
+    blueprint_key = ndb.Key(urlsafe=blue_key)
+    blueprint = blueprint_key.get()
     schema_version = blueprint.schema_version
     if schema_version < starmade.SCHEMA_VERSION_CURRENT:
        power_recharge = starmade.valid_power(blueprint.power_recharge)
@@ -371,7 +372,7 @@ def view(blue_key):
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
                                      power_recharge, power_capacity,
                                      blue_key).get()
-       if schema_version < 24:
+       if schema_version < 25:
           # process attachments
           taskqueue.add(url="/find_attachments", queue_name="deepdive",
                         params={"blob_key": blueprint.blob_key,
@@ -380,7 +381,34 @@ def view(blue_key):
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
     context['blue_key'] = blue_key
+
+    query = BlueprintAttachment.query(ancestor=blueprint_key)
+    query = query.filter(BlueprintAttachment.depth == 1)
+    
+    attachment_list = [{"blue_key": r.key.urlsafe(),
+                        "class_rank": r.class_rank} for r in query.iter()]
+    context['attachment_list'] = attachment_list    
+
     return render_template('view_blueprint.html', **context)
+
+@app.route("/view_attachment/<blue_key>")
+def view_attachment(blue_key):
+    roman = {-1: "N", 0: "N", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
+             6: "VI", 7: "VII", 8: "VIII"}
+    attachment_key = ndb.Key(urlsafe=blue_key)
+    blueprint = attachment_key.get()
+    parent_blueprint = attachment_key.parent().get()
+    schema_version = blueprint.schema_version
+    
+    # TODO: Need to add schema updating logic that works for attachments
+
+    context = json.loads(blueprint.context)
+    context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
+    context['blue_key'] = blue_key
+    context['parent'] = parent_blueprint.key.urlsafe()
+    context['parent_title'] = parent_blueprint.title
+    
+    return render_template('view_attachment.html', **context)
 
 @app.route("/delete/<blue_key>", methods=['POST'])
 def delete(blue_key):
@@ -545,14 +573,15 @@ def add_attachments():
     for task in task_bundle['tasks']:
         logging.info(task)
         path = task['path']
+        title = path[1:]
         parent_paths = []
         partial_path = ""
-        for part in path[1:].split('/'):
+        for part in title.split('/'):
             partial_path += '/' + part
             parent_paths.append(partial_path)
         header_blob = task['header'].decode("base64")
         header_file = StringIO.StringIO(header_blob)
-        blueprint = process_header(BlueprintAttachment, "", header_file, path,
+        blueprint = process_header(BlueprintAttachment, "", header_file, title,
                                    power_recharge=0, power_capacity=50000,
                                    blue_key=path, ancestor_key=ancestor_key,
                                    paths=parent_paths)
