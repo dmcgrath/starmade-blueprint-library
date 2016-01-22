@@ -139,6 +139,14 @@
       <div class="datum">
         <strong>Docked on:</strong> <a href="/view/{{ parent }}">{{ parent_title }}</a>
       </div>
+      <div class="datum">
+        <strong>Docked List:</strong>
+        <ul>
+        {% for attachment in attachment_list %}
+          <li><a href="/view_attachment/{{ attachment.blue_key  }}">Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][attachment.class_rank]}}</a></li>
+        {% endfor %}
+        </ul>
+      </div>
     </div>
     <div class="col middle">
       <div class="subheading">

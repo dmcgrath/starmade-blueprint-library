@@ -38,12 +38,6 @@ indexes:
 - kind: BlueprintAttachment
   ancestor: yes
   properties:
-  - name: path
-  - name: depth
-
-- kind: BlueprintAttachment
-  ancestor: yes
-  properties:
   - name: depth
   - name: class_rank
     direction: desc
@@ -51,12 +45,7 @@ indexes:
 - kind: BlueprintAttachment
   ancestor: yes
   properties:
-  - name: header_hash
-  - name: depth
-
-- kind: BlueprintAttachment
-  ancestor: yes
-  properties:
+  - name: path
   - name: depth
   - name: class_rank
     direction: desc

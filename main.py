@@ -408,6 +408,17 @@ def view_attachment(blue_key):
     context['blue_key'] = blue_key
     context['parent'] = parent_blueprint.key.urlsafe()
     context['parent_title'] = parent_blueprint.title
+
+    next_depth = blueprint.depth + 1
+    query = BlueprintAttachment.query(ancestor=parent_blueprint.key)
+    query = query.filter(BlueprintAttachment.path == '/' + blueprint.title)
+    query = query.filter(BlueprintAttachment.depth == next_depth)
+    query = query.order(-BlueprintAttachment.class_rank)
+    
+    attachment_list = [{"blue_key": r.key.urlsafe(),
+                        "class_rank": r.class_rank,
+                        "header_hash": r.header_hash} for r in query.iter()]
+    context['attachment_list'] = attachment_list    
     
     return render_template('view_attachment.html', **context)
 
