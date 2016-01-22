@@ -386,7 +386,8 @@ def view(blue_key):
     query = query.filter(BlueprintAttachment.depth == 1)
     query = query.order(-BlueprintAttachment.class_rank)
     
-    attachment_list = [{"blue_key": r.key.urlsafe(),
+    attachment_list = [{"blue_key": r.key.urlsafe(), "title": r.title,
+                        "header_hash": r.header_hash,
                         "class_rank": r.class_rank} for r in query.iter()]
     context['attachment_list'] = attachment_list    
 
@@ -415,8 +416,8 @@ def view_attachment(blue_key):
     query = query.filter(BlueprintAttachment.depth == next_depth)
     query = query.order(-BlueprintAttachment.class_rank)
     
-    attachment_list = [{"blue_key": r.key.urlsafe(),
-                        "class_rank": r.class_rank,
+    attachment_list = [{"blue_key": r.key.urlsafe(), "class_rank": r.class_rank, 
+                        "title": r.title,
                         "header_hash": r.header_hash} for r in query.iter()]
     context['attachment_list'] = attachment_list    
     

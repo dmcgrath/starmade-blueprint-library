@@ -140,7 +140,7 @@
         <strong>Docked List:</strong>
         <ul>
         {% for attachment in attachment_list %}
-          <li><a href="/view_attachment/{{ attachment.blue_key  }}">Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][attachment.class_rank]}}</a></li>
+          <li><a href="/view_attachment/{{ attachment.blue_key  }}">{{ attachment.title }} [Class-{{["N", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"][attachment.class_rank]}}]</a></li>
         {% endfor %}
         </ul>
       </div>
