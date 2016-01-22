@@ -384,6 +384,7 @@ def view(blue_key):
 
     query = BlueprintAttachment.query(ancestor=blueprint_key)
     query = query.filter(BlueprintAttachment.depth == 1)
+    query = query.order(-BlueprintAttachment.class_rank)
     
     attachment_list = [{"blue_key": r.key.urlsafe(),
                         "class_rank": r.class_rank} for r in query.iter()]
