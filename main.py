@@ -405,8 +405,11 @@ def view(blue_key):
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
     context['blue_key'] = blue_key
-    context['profile_url'] = blueprint.profile_url
-    context['display_name'] = blueprint.display_name
+
+    user = ndb.Key(access.User, blueprint_user).get()
+
+    context['profile_url'] = user.profile_url
+    context['display_name'] = user.display_name
 
     query = BlueprintAttachment.query(ancestor=blueprint_key)
     query = query.filter(BlueprintAttachment.depth == 1)
