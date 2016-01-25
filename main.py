@@ -406,7 +406,7 @@ def view(blue_key):
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
     context['blue_key'] = blue_key
 
-    user = ndb.Key(access.User, blueprint_user).get()
+    user = ndb.Key(access.User, blueprint.user).get()
 
     context['profile_url'] = user.profile_url
     context['display_name'] = user.display_name
