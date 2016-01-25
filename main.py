@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, make_response, redirect, url_
 from starmade import Blueprint, BlueprintAttachment
 from struct import Struct
 from werkzeug import parse_options_header
+import access
 import hashlib
 import json
 import logging
@@ -34,8 +35,20 @@ def millify(n):
                   int(math.floor(math.log10(abs(n))/3))))
     return '%.0f %s'%(n/10**(3*millidx),millnames[millidx])
 
+@app.route("/")
+def landing():
+    return render_template("landing.html") 
+
 @app.route("/upload")
 def upload():
+    version_id = request.environ["CURRENT_VERSION_ID"].split('.')[0]
+    logging.info('App Version: '+version_id)
+    user = ndb.Key(access.User, version_id).get()
+    if user == None:
+       return 'Forbidden', 403
+    else:
+        logging.info('User get: ' + user.display_name)
+
     uploadUri = blobstore.create_upload_url('/submit',
                                             gs_bucket_name='blueprints')
     return render_template('upload.html', uploadUri=uploadUri)
@@ -66,6 +79,9 @@ def submit():
 #            return request.remote_addr+' Sorry, reCaptcha failed'+ verify_recaptcha.content, 403
 
         # reCaptcha has passed if we get to here - proceed with upload
+
+        # TODO: Replace with real user stuff
+        user_name = request.environ["CURRENT_VERSION_ID"].split('.')[0]
         f = request.files['file']
         power_recharge = starmade.valid_power(request.form['power_recharge'])
         power_capacity = starmade.valid_power(request.form['power_capacity'])
@@ -75,7 +91,7 @@ def submit():
         blob_key = parsed_header[1]['blob-key']
 
         blue_key = process_blueprint(blob_key, blueprint_title, power_recharge,
-                                     power_capacity)
+                                     power_capacity, None, user_name)
 
         # process attachments
         taskqueue.add(url="/find_attachments", queue_name="deepdive",
@@ -85,22 +101,30 @@ def submit():
                                blue_key=blue_key.urlsafe())
 
 def process_blueprint(blob_key, blueprint_title, power_recharge=0,
-                      power_capacity=0, blue_key=None):
+                      power_capacity=0, blue_key=None, user_name=None):
     blob_info = blobstore.get(blob_key)
     blob = blob_info.open()
 
+    attached_count = 0
+
     with zipfile.ZipFile(file=blob, mode="r") as zip_file:
         for filename in (name for name in zip_file.namelist()
-                         if name.endswith('/header.smbph')
-                            and name.count('/') <= 1):
-            blueprint_title = filename[:filename.find("/")].replace("_", " ")
-            header_blob = zip_file.open(filename)
-            blueprint = process_header(Blueprint, blob_key, header_blob,
-                                       blueprint_title, power_recharge,
-                                       power_capacity, blue_key)
+                         if name.endswith('/header.smbph')):
+            if filename.count('/') == 1:
+                blueprint_title = filename[:filename.find("/")].replace("_", " ")
+                header_blob = zip_file.open(filename)
+                blueprint = process_header(Blueprint, blob_key, header_blob,
+                                           blueprint_title, power_recharge,
+                                           power_capacity, blue_key)
+            elif filename.count('/') == 2:
+                attached_count += 1
 
-            blue_key = blueprint.put()
-            return blue_key
+        if user_name != None:
+            blueprint.user = user_name
+        blueprint.attached_count = attached_count
+
+        blue_key = blueprint.put()
+        return blue_key
 
 def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
                    power_capacity=0, blue_key=None, ancestor_key=None, paths=[]):
@@ -381,6 +405,8 @@ def view(blue_key):
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
     context['blue_key'] = blue_key
+    context['profile_url'] = blueprint.profile_url
+    context['display_name'] = blueprint.display_name
 
     query = BlueprintAttachment.query(ancestor=blueprint_key)
     query = query.filter(BlueprintAttachment.depth == 1)
@@ -389,7 +415,12 @@ def view(blue_key):
     attachment_list = [{"blue_key": r.key.urlsafe(), "title": r.title,
                         "header_hash": r.header_hash,
                         "class_rank": r.class_rank} for r in query.iter()]
-    context['attachment_list'] = attachment_list    
+    context['attachment_list'] = attachment_list
+
+    if attachment_list != None:
+        context['missing_count'] = blueprint.attached_count - len(attachment_list)
+    else:
+        context['missing_count'] = 0
 
     return render_template('view_blueprint.html', **context)
 
@@ -584,7 +615,6 @@ def add_attachments():
 
     attachments = []
     for task in task_bundle['tasks']:
-        logging.info(task)
         path = task['path']
         title = path[1:]
         parent_paths = []

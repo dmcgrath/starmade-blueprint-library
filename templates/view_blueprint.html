@@ -136,6 +136,12 @@
       <div class="subheading">
         <h4>Structures</h4>
       </div>
+      {% if missing_count > 0 %}
+      <div class="datum">
+        Still processing attachments.<br>
+        Refresh page to see more.
+      </div>
+      {% endif %}
       <div class="datum">
         <strong>Docked List:</strong>
         <ul>
@@ -160,7 +166,10 @@
     </div>
     <div class="col right">
       <div class="subheading">
-        <h4>Actions</h4>
+        <h4>More</h4>
+      </div>
+      <div class="datum">
+      <strong>Builder: </strong><a href="{{ profile_url}}">{{ display_name }}</a>
       </div>
       <div class="datum">
         <form method="GET" action="/list/">
