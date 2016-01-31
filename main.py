@@ -210,7 +210,7 @@ def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
                 base_capacity = 0
             context['ideal_capacitor'] = ideal_capacitor
             power_capacity -= base_capacity
-            if power_capacity > ideal_capacitor or power_capacity == 0:
+            if power_capacity > ideal_capacitor or power_capacity <= 0:
                context['power_capacity']['ideal_capacitor'] = ideal_capacitor
             else:
                context['power_capacity']['power_capacity'] = power_capacity
