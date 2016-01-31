@@ -402,11 +402,6 @@ def view(blue_key):
        blueprint = process_blueprint(blueprint.blob_key, blueprint.title,
                                      power_recharge, power_capacity,
                                      blue_key).get()
-       if schema_version < 25:
-          # process attachments
-          taskqueue.add(url="/find_attachments", queue_name="deepdive",
-                        params={"blob_key": blueprint.blob_key,
-                                "blue_key": blue_key})
 
     context = json.loads(blueprint.context)
     context['class'] = "Class-" + roman.get(round(math.log10(context['mass']), 0), "?")
