@@ -1,6 +1,6 @@
 """`main` is the top level module for the blueprint indexer Flask app)"""
 
-from google.appengine.api import taskqueue, urlfetch
+from google.appengine.api import memcache, taskqueue, urlfetch
 from google.appengine.datastore.datastore_query import Cursor
 from google.appengine.ext import blobstore, ndb
 from flask import Flask, render_template, request, make_response, redirect, url_for
@@ -49,8 +49,14 @@ def upload():
     else:
         logging.info('User get: ' + user.display_name)
 
+# Get bucket
+    bucket = memcache.get('bucket')
+    if bucket is None:
+        bucket = ndb.Key(Secrets, 'blobstore').get().secret_key
+        memcache.add('bucket', bucket, 36000)
+
     uploadUri = blobstore.create_upload_url('/submit',
-                                            gs_bucket_name='blueprints')
+                                            gs_bucket_name=bucket)
     return render_template('upload.html', uploadUri=uploadUri)
 
 @app.route("/submit", methods=['POST'])
