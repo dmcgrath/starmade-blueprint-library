@@ -19,7 +19,6 @@ import zipfile
 
 app = Flask(__name__)
 
-
 class Secrets(ndb.Model):
     """Datastore Entity for Private keys"""
     secret_key = ndb.StringProperty(indexed=False)
@@ -130,6 +129,10 @@ def process_blueprint(blob_key, blueprint_title, power_recharge=0,
         blueprint.attached_count = attached_count
 
         blue_key = blueprint.put()
+
+        #Save title for searching
+        starmade.create_document(blueprint_title, blue_key.urlsafe())
+
         return blue_key
 
 def process_header(Kind, blob_key, blob, blueprint_title, power_recharge=0,
